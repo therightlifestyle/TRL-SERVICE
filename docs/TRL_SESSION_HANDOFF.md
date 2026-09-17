@@ -1,6 +1,13 @@
 # TRL — Session Handoff
 
-_Last updated: 2026-09-17 (Gate 5 session)._
+_Last updated: 2026-09-17 (Gate 5 session, part 2)._
+
+## Latest session (part 2): rate limiting wired, Pages build repaired
+
+PR #7 **merged** and all three CI jobs passed — including the e2e/browser job, so the static-page header assertions flagged as the likely failure point held up. This follow-on session did two things:
+
+1. **The rate limit is now implemented**, not just planned. `handleContactPost` takes an optional `checkRateLimit`; `createRateLimitCheck` wraps the binding fail-open; the contact page passes `cfEnv.CONTACT_RATE_LIMITER`. Over-limit → `429` with the same generic input-preserving state as `503`. **One deliberate deviation from the plan:** the check runs after body parsing rather than literally first, because a pre-parse check cannot also echo the visitor's input back; parsing spends nothing and Turnstile/Resend still come after, so the cost ceiling is unchanged. `wrangler.jsonc` holds the `ratelimits` block **commented out** — `namespace_id` is account-scoped and no account exists, so it stays unfabricated. 233 unit tests pass, `astro check` clean, and the real preview still answers `503` on POST (fail-open proven).
+2. **`main`'s red `pages build and deployment` is explained and contained.** GitHub Pages runs the legacy Jekyll builder over the repo root; Jekyll parses `.astro` files' `---` fence as front matter and chokes. Added `_config.yml` excluding the app source. **The real fix is a founder action** — disable Pages or set its source to GitHub Actions in Settings → Pages; the repo token gets `403` on the Pages API. Tracked in `TRL_DEPLOYMENT.md`.
 
 ## Current status
 
@@ -37,6 +44,7 @@ The deployment boundary is Cloudflare Workers **with static assets**, which spli
 
 ## Remaining work
 
+- **Founder action outstanding:** disable GitHub Pages (or switch its source to GitHub Actions); then `_config.yml` can be deleted.
 - **Gate 5 remainder:** dependency re-review; Lighthouse/performance + SEO audit; monitoring/observability review (the `wrangler.jsonc` `observability` flag is on); the analytics founder decision. Then **Gates 6–8** (deployment readiness, final verification, founder launch approval).
 - **Deployment gate (founder):** create Cloudflare/Turnstile/Resend accounts; production keys; sender-domain verification (DNS change — explicit authorization); real enquiry end-to-end; rate-limit `namespace_id` + burst-check; framing/HSTS platform rules; run `TRL_MANUAL_ACCESSIBILITY_PASS.md`.
 

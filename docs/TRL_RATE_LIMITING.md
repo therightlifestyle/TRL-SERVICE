@@ -1,10 +1,37 @@
-# TRL — Rate limiting plan for the contact endpoint (Gate 5)
+# TRL — Rate limiting for the contact endpoint (Gate 5)
 
-_Last updated: 2026-09-17. Status: **planned** — the design, limits, exact
-config, and code path are fixed; deployment waits for the Cloudflare account,
-whose identifiers only the founder can supply._
+_Last updated: 2026-09-17. Status: **implemented, awaiting one founder value**
+— the enforcing code, its fail-open contract, and its tests are committed and
+green; only the account-scoped `namespace_id` and the `ratelimits` block in
+`wrangler.jsonc` (commented out, ready to uncomment) wait on the Cloudflare
+account._
 
-## Why this is a plan, not wired code
+## What changed since this was a plan
+
+The pipeline code now exists. `handleContactPost` takes an optional
+`checkRateLimit` dependency, `createContactDeps(binding)` wraps the Workers
+binding in the fail-open contract via `createRateLimitCheck`, and
+`src/pages/contact.astro` passes `cfEnv.CONTACT_RATE_LIMITER` — which is
+`undefined` everywhere today, so the endpoint behaves exactly as before.
+
+**One deliberate departure from the plan below.** The plan said the check runs
+*first*, before the body is read. It now runs immediately *after* body parsing
+and before the honeypot. The reason is that the plan asked for two things that
+a pre-parse check cannot both deliver: reject before any expensive work, *and*
+re-render the visitor's input so nothing is retyped. The input does not exist
+until the body is parsed.
+
+Parsing first costs nothing that matters — `request.formData()` makes no
+network call and spends no third-party quota, and the only expensive exits
+(Turnstile verification, Resend delivery) still come strictly after the check.
+So an over-limit client still cannot make this endpoint spend anything, which
+was the actual goal of "first"; and a real person who trips the ceiling now
+gets their typing back, matching the 503 path. The anti-leak property is
+preserved too, since the check still precedes the honeypot and validation: an
+over-limit spam submission and an over-limit genuine one are treated
+identically.
+
+## Why a rate limit at all, and why the binding is not yet configured
 
 The endpoint's existing abuse controls — Turnstile, the honeypot, and Astro's
 `checkOrigin` — ask the question "is this a person submitting a real form?".
@@ -25,15 +52,17 @@ account-scoped and cannot be fabricated in this repository:
    founder's account first deploys the config.
 
 Everything else — the binding shape, the limit values, the key, the ordering,
-the user-facing response, and the code that will enforce it — is decided below
-and unit-testable today, so the deployment-gate step is genuinely just "add two
-founder-owned values".
+the user-facing response, and the code that enforces it — is decided below and
+**implemented and tested today**, so the deployment-gate step is genuinely just
+"supply the namespace integer and uncomment four lines".
 
 ## Where the limit goes
 
 In `wrangler.jsonc` (which `astro build` merges into the generated deploy
 config at `dist/server/wrangler.json`), alongside the existing
-`compatibility_date` and `observability`:
+`compatibility_date` and `observability`. **This block is present in the file
+today, commented out**, so the deployment-gate step is to uncomment it and
+fill in the integer:
 
 ```jsonc
 {
@@ -113,9 +142,14 @@ Concretely, `handleContactPost` gains a leading `limitOutcome` dependency that
 the page wires to the real binding. The ordered flow becomes:
 
 ```
-POST /contact/ → rate limit (429) → honeypot (silent 303) → Turnstile (403)
+POST /contact/ → content-type (415) → parse (400) → rate limit (429)
+              → honeypot (silent 303) → Turnstile (403)
               → validation (422) → delivery (303 | 503)
 ```
+
+The two steps ahead of the rate limit are the request's own well-formedness,
+not judgements about the sender: a body that is not a form cannot be counted,
+keyed, or echoed back, and neither step calls out to anything.
 
 ## User-facing behaviour on 429
 
@@ -157,19 +191,33 @@ ever happens when the binding answered `success: false` itself, so there is no
 misconfiguration that silently discards real messages (mirroring D-016's
 no-silent-discard rule).
 
-## Test coverage required when the account exists
+## Test coverage
 
-When the founder supplies the account and namespace, the implementation adds:
+**Committed and green** (`tests/unit/contact-endpoint.test.ts`, 233 unit tests
+passing overall) — with injected binding fakes, no network:
 
-1. **Unit tests** (with injected binding fakes, no network): deny→429 with
-   preserved input and no email/Turnstile call; allow→pipeline proceeds;
-   binding-missing→allow; binding-error→allow + logged; log hygiene holds for
-   the new reason.
-2. **One e2e test** against the dummy-key preview, which cannot exercise a real
+- deny → 429, with no Turnstile call and no email sent;
+- deny → the submitted values are preserved for re-render;
+- deny → indistinguishable from the delivery-unavailable state, asserted by
+  comparing the rendered inputs (`formError`, `fieldErrors`, `values`) against
+  the real 503 path rather than by string-matching the word "rate";
+- the key passed to the binding is the `cf-connecting-ip` value;
+- allow → the whole pipeline runs to `accepted`;
+- deny precedes the honeypot and validation (ordering leak);
+- binding missing → allow, binding never called;
+- no trustworthy key (`cf-connecting-ip` absent) → not limited;
+- `createRateLimitCheck`: absent binding → `undefined`; key passthrough;
+  a throwing binding → allow + one logged `rate-limiter-error`; the key is
+  never logged;
+- the existing log-hygiene sweep now also runs the rate-limited paths and
+  treats the IP as a banned substring.
+
+Still required when the account exists:
+1. **One e2e test** against the dummy-key preview, which cannot exercise a real
    binding (workerd does not emulate `ratelimits`) but asserts the *contract*:
    that a POST still produces the honest generic failure state when the
    delivery boundary is reached, and that the form remains enabled.
-3. **Deployment-gate manual check** (added to `TRL_DEPLOYMENT.md`): burst 20
+2. **Deployment-gate manual check** (added to `TRL_DEPLOYMENT.md`): burst 20
    form POSTs from the deployed preview and observe the 11th-and-later being
    rejected in the generic state, then a normal submission succeeding after the
    10-second window.
@@ -180,14 +228,15 @@ When the founder supplies the account and namespace, the implementation adds:
       (Workers Builds), which provisions the `CONTACT_RATE_LIMITER` namespace
       from the `namespace_id` below.
 - [ ] Founder chooses the `namespace_id` integer (any positive integer unique
-      to the account; e.g. `"1001"`), and it is set in `wrangler.jsonc` when
-      the account exists.
+      to the account; e.g. `"1001"`), then **uncomments the `ratelimits`
+      block already present in `wrangler.jsonc`** and sets that value. No code
+      change is needed: the endpoint picks the binding up automatically.
 - [ ] Keep the chosen values (`10 / 10s`) — they are set for a real-person
       margin, not for tuning; revisit only with observed production evidence.
 
 ## Decision record
 
 **D-018** — response-security headers and the contact CSP (see Decision Log):
-the deployment boundary, and this plan is its rate-limit companion. The
-rate-limit portion of Gate 5 is planned here rather than wired because
-`namespace_id` is account-owned; everything else is fixed and testable.
+the deployment boundary, and this document is its rate-limit companion. The
+enforcement code is committed; only `namespace_id` is account-owned and
+therefore deferred to the deployment gate.

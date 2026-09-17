@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   composeEnquiryEmail,
+  createRateLimitCheck,
   handleContactPost,
   isFormContentType,
   HONEYPOT_FIELD,
@@ -42,15 +43,23 @@ interface Calls {
   turnstile: { secret: string; token: string; ip?: string }[];
   emails: { email: ComposedEmail; apiKey: string }[];
   logs: ContactLogEvent[];
+  rateLimitKeys: string[];
 }
 
 function makeDeps(
-  behaviour: { turnstile?: boolean; deliver?: boolean } = {},
+  behaviour: { turnstile?: boolean; deliver?: boolean; rateLimit?: boolean } = {},
 ): { deps: ContactDeps; calls: Calls } {
-  const calls: Calls = { turnstile: [], emails: [], logs: [] };
+  const calls: Calls = { turnstile: [], emails: [], logs: [], rateLimitKeys: [] };
   return {
     calls,
     deps: {
+      checkRateLimit:
+        behaviour.rateLimit === undefined
+          ? undefined
+          : async (key) => {
+              calls.rateLimitKeys.push(key);
+              return behaviour.rateLimit!;
+            },
       verifyTurnstile: async (secret, token, ip) => {
         calls.turnstile.push({ secret, token, ip });
         return behaviour.turnstile ?? true;
@@ -368,6 +377,7 @@ describe('log hygiene', () => {
       'turnstile-secret',
       'resend-api-key',
       'turnstile-token-value',
+      '198.51.100.7',
     ];
 
     const scenarios = [
@@ -379,7 +389,13 @@ describe('log hygiene', () => {
     ];
 
     for (const [index, request] of scenarios.entries()) {
-      const behaviours = [{}, { turnstile: false }, { deliver: false }];
+      const behaviours = [
+        {},
+        { turnstile: false },
+        { deliver: false },
+        { rateLimit: false },
+        { rateLimit: true },
+      ];
       for (const behaviour of behaviours) {
         const { deps, calls } = makeDeps(behaviour);
         await handleContactPost(request, ENV, deps);
@@ -404,5 +420,183 @@ describe('log hygiene', () => {
       outcome: 'accepted',
       requestId: expect.stringMatching(/^[\da-f-]{36}$/),
     });
+  });
+});
+
+
+/*
+ * Rate limiting (Gate 5, docs/TRL_RATE_LIMITING.md).
+ *
+ * The limiter is injected exactly like Turnstile and delivery, so the whole
+ * decision tree is asserted without a binding: the real Workers
+ * `ratelimits` binding cannot be emulated locally (workerd does not implement
+ * it), which is precisely why the contract is pinned here.
+ */
+const LIMITED_IP = { 'cf-connecting-ip': '198.51.100.7' };
+
+describe('rate limiting', () => {
+  it('rejects an over-limit request with 429 before spending Turnstile or delivery', async () => {
+    const { deps, calls } = makeDeps({ rateLimit: false });
+    const result = await handleContactPost(formPost(validFields(), LIMITED_IP), ENV, deps);
+
+    expect(result).toMatchObject({ outcome: 'render', status: 429, formError: 'unavailable' });
+    expect(calls.turnstile).toHaveLength(0);
+    expect(calls.emails).toHaveLength(0);
+    expect(calls.logs.map((log) => log.outcome)).toEqual(['rejected-rate-limit']);
+  });
+
+  it('preserves the visitor input on a 429 so nothing is retyped', async () => {
+    const { deps } = makeDeps({ rateLimit: false });
+    const result = await handleContactPost(formPost(validFields(), LIMITED_IP), ENV, deps);
+
+    expect(result).toMatchObject({
+      values: {
+        name: SUBMISSION.name,
+        email: SUBMISSION.email,
+        message: SUBMISSION.message,
+        phone: SUBMISSION.phone,
+        business: SUBMISSION.business,
+      },
+    });
+  });
+
+  it('is indistinguishable from the delivery-unavailable state to the visitor', async () => {
+    // Everything the page renders comes from `formError` and `fieldErrors`;
+    // the status code is transport, not something a visitor reads. Compare
+    // those rendered inputs against the existing 503 path: if they match, the
+    // visitor cannot tell a rate limit from a delivery outage, so the ceiling
+    // and its value stay unrevealed.
+    const limited = await handleContactPost(
+      formPost(validFields(), LIMITED_IP),
+      ENV,
+      makeDeps({ rateLimit: false }).deps,
+    );
+    const unavailable = await handleContactPost(
+      formPost(validFields(), LIMITED_IP),
+      { ...ENV, RESEND_API_KEY: '' },
+      makeDeps().deps,
+    );
+
+    expect(limited.outcome).toBe('render');
+    expect(unavailable.outcome).toBe('render');
+    if (limited.outcome !== 'render' || unavailable.outcome !== 'render') return;
+
+    expect(limited.formError).toBe(unavailable.formError);
+    expect(limited.fieldErrors).toEqual(unavailable.fieldErrors);
+    expect(limited.values).toEqual(unavailable.values);
+  });
+
+  it('keys the limit on the Cloudflare-set visitor IP', async () => {
+    const { deps, calls } = makeDeps({ rateLimit: true });
+    await handleContactPost(formPost(validFields(), LIMITED_IP), ENV, deps);
+
+    expect(calls.rateLimitKeys).toEqual(['198.51.100.7']);
+  });
+
+  it('lets an allowed request run the whole pipeline', async () => {
+    const { deps, calls } = makeDeps({ rateLimit: true });
+    const result = await handleContactPost(formPost(validFields(), LIMITED_IP), ENV, deps);
+
+    expect(result).toEqual({ outcome: 'redirect', location: '/contact/sent/' });
+    expect(calls.turnstile).toHaveLength(1);
+    expect(calls.emails).toHaveLength(1);
+    expect(calls.logs.map((log) => log.outcome)).toEqual(['accepted']);
+  });
+
+  it('rejects on volume before the honeypot, so ordering leaks no bot assessment', async () => {
+    const { deps, calls } = makeDeps({ rateLimit: false });
+    const result = await handleContactPost(
+      formPost(validFields({ [HONEYPOT_FIELD]: 'spam' }), LIMITED_IP),
+      ENV,
+      deps,
+    );
+
+    // A spam submission and a genuine one get byte-identical treatment when
+    // over the limit: both 429, neither the honeypot's silent redirect.
+    expect(result).toMatchObject({ status: 429 });
+    expect(calls.logs.map((log) => log.outcome)).toEqual(['rejected-rate-limit']);
+  });
+
+  it('rejects on volume before validation, so an over-limit client learns nothing', async () => {
+    const { deps } = makeDeps({ rateLimit: false });
+    const result = await handleContactPost(
+      formPost(validFields({ name: '', email: 'nonsense' }), LIMITED_IP),
+      ENV,
+      deps,
+    );
+
+    expect(result).toMatchObject({ status: 429 });
+    expect(result).not.toHaveProperty('fieldErrors.name');
+  });
+
+  it('allows every request when no binding is injected (local preview and CI)', async () => {
+    const { deps, calls } = makeDeps();
+    const result = await handleContactPost(formPost(validFields(), LIMITED_IP), ENV, deps);
+
+    expect(result).toEqual({ outcome: 'redirect', location: '/contact/sent/' });
+    expect(calls.rateLimitKeys).toEqual([]);
+  });
+
+  it('does not limit a request with no trustworthy key', async () => {
+    const { deps, calls } = makeDeps({ rateLimit: false });
+    // No cf-connecting-ip: there is nothing the client cannot forge to count
+    // against, so the request proceeds rather than being blocked on a guess.
+    const result = await handleContactPost(formPost(validFields()), ENV, deps);
+
+    expect(result).toEqual({ outcome: 'redirect', location: '/contact/sent/' });
+    expect(calls.rateLimitKeys).toEqual([]);
+  });
+});
+
+describe('createRateLimitCheck', () => {
+  it('returns undefined when the binding is absent', () => {
+    expect(createRateLimitCheck(undefined, () => {})).toBeUndefined();
+  });
+
+  it('passes the key through and reports the binding decision', async () => {
+    const seen: { key: string }[] = [];
+    const check = createRateLimitCheck(
+      {
+        limit: async (options) => {
+          seen.push(options);
+          return { success: false };
+        },
+      },
+      () => {},
+    )!;
+
+    await expect(check('198.51.100.7')).resolves.toBe(false);
+    expect(seen).toEqual([{ key: '198.51.100.7' }]);
+  });
+
+  it('fails open and logs when the binding throws, so a degraded limiter never blocks a person', async () => {
+    const logs: ContactLogEvent[] = [];
+    const check = createRateLimitCheck(
+      {
+        limit: async () => {
+          throw new Error('edge hiccup');
+        },
+      },
+      (event) => logs.push(event),
+    )!;
+
+    await expect(check('198.51.100.7')).resolves.toBe(true);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({ outcome: 'system-error', reason: 'rate-limiter-error' });
+  });
+
+  it('never logs the key it was given', async () => {
+    const logs: ContactLogEvent[] = [];
+    const check = createRateLimitCheck(
+      {
+        limit: async () => {
+          throw new Error('edge hiccup');
+        },
+      },
+      (event) => logs.push(event),
+    )!;
+
+    await check('198.51.100.7');
+    expect(JSON.stringify(logs)).not.toContain('198.51.100.7');
   });
 });

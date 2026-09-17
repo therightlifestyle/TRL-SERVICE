@@ -1,0 +1,51 @@
+# Jekyll configuration — present only to make GitHub Pages' legacy builder
+# succeed on a repository that is NOT a Jekyll site.
+#
+# Why this file exists
+# --------------------
+# This repository is an Astro project deployed to Cloudflare Workers with
+# static assets (D-014 / docs/TRL_DEPLOYMENT.md). GitHub Pages is nevertheless
+# enabled on it with the legacy Jekyll builder sourced from `main`, so every
+# push to `main` runs `jekyll build` over the repository root.
+#
+# Jekyll treats any file beginning with a `---` line as a page with YAML front
+# matter and renders the remainder through Liquid. Every `.astro` file in
+# `src/` opens with an `---` fence containing JavaScript, and the component
+# markup contains `{...}` expressions, so the Jekyll build fails during
+# "Generating...". That is the `pages build and deployment` failure seen after
+# each merge; it has nothing to do with the CI workflow, which is green.
+#
+# The correct end state is for the founder to switch Pages off (or to
+# "GitHub Actions" as the source) in Settings → Pages, since nothing here is
+# meant to be published from `main`. That is an admin action the repository
+# token cannot perform. Until then, this file keeps `main` green by excluding
+# the application source from the Jekyll build, leaving it only the Markdown
+# documentation it can actually render.
+#
+# See also: docs/TRL_DEPLOYMENT.md ("GitHub Pages").
+
+title: TRL — The Right Lifestyle
+description: Project documentation. The website itself is built with Astro and deployed to Cloudflare Workers.
+
+# Everything Jekyll must not try to parse. The Astro source, the tests, the
+# build output, and the tooling configs are all either Liquid-hostile or
+# irrelevant to a documentation render.
+exclude:
+  - src
+  - tests
+  - public
+  - dist
+  - node_modules
+  - .github
+  - astro.config.mjs
+  - playwright.config.ts
+  - vitest.config.ts
+  - tsconfig.json
+  - wrangler.jsonc
+  - package.json
+  - package-lock.json
+
+# No `defaults:` block on purpose. The Pages theme (jekyll-theme-primer) already
+# supplies a default layout, and pinning one here would be a second thing that
+# can fail in a build we cannot run locally. The exclusions above are the whole
+# fix; keep this file as small as possible.
