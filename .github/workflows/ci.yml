@@ -60,7 +60,10 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npm run test:e2e
+        # TEMPORARY: run only the Turnstile diagnostic so its report is not
+        # dropped by GitHub's 10-annotation-per-run cap. Restore to
+        # `npm run test:e2e` once the cause is known.
+        run: npx playwright test tests/e2e/turnstile-diagnostic.spec.ts --project=desktop
 
       - name: Upload the Playwright report
         if: ${{ !cancelled() }}
