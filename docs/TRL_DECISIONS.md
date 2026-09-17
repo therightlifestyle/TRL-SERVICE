@@ -27,3 +27,34 @@
 - **Date:** 2026-09-17
 - **Status:** Operating constraint
 - **Decision:** Prepare for deployment, but do not change DNS, purchase services, or launch publicly without founder approval.
+
+## D-005 — Phase 1 stack is Astro with static output and one server endpoint
+
+- **Date:** 2026-09-17
+- **Status:** Founder-approved in session (Gate 1)
+- **Decision:** Build the public site with Astro and TypeScript, plain CSS with design tokens, and a single server endpoint for the contact form.
+- **Why:** Phase 1 is a content site with one interactive path; Astro ships near-zero client JavaScript, keeps the security and maintenance surface small, and stays portable across hosts (MIT-licensed with multiple deployment targets).
+- **Consequence:** Interactive product features (dashboards, accounts) are out of scope and would be separate applications. Rejected alternatives: Next.js, plain HTML/CSS/JS, WordPress. Exact version and dependency set are pinned at the Gate 3 scaffold.
+
+## D-006 — Hosting direction is Cloudflare Pages
+
+- **Date:** 2026-09-17
+- **Status:** Founder-approved in session (Gate 1); nothing deployed yet
+- **Decision:** Target Cloudflare Pages for hosting, DNS, and HTTPS for the intended domain therightlifestyle.com.
+- **Why:** The free tier permits commercial use (unlike, for example, Vercel's free Hobby plan, which is restricted to personal, non-commercial projects), and it consolidates hosting, DNS, and certificates in one place.
+- **Consequence:** No account creation, DNS change, or deployment happens until the deployment gate with explicit founder authorization.
+
+## D-007 — Contact form delivery is email to the approved address; no database
+
+- **Date:** 2026-09-17
+- **Status:** Founder-approved in session (Gate 1)
+- **Decision:** Server-validated form submissions (with Cloudflare Turnstile and a honeypot) are emailed to officialtrlservice@gmail.com via the Resend transactional email API. No database or CRM storage in Phase 1.
+- **Why:** The simplest honest pipeline; the inbox is the system of record; avoids the data-protection duties of storing PII.
+- **Consequence:** Storage/CRM can be added later behind the same endpoint. Sender-domain verification (a DNS change) is deferred to the deployment gate; email-provider free-tier sending restrictions are verified at Gate 4 and recorded in `TRL_ARCHITECTURE.md`.
+
+## D-008 — First release is the full core site
+
+- **Date:** 2026-09-17
+- **Status:** Founder-approved in session (Gate 1)
+- **Decision:** The first release includes Home, About, Services, AI Solutions, Offers/Pricing, Contact, and Privacy/Terms structure.
+- **Consequence:** No client accounts, CMS, database, payments, blog, or unearned social proof in the first release; all scope exclusions are recorded in `TRL_USER_JOURNEYS.md`.
