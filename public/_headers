@@ -19,3 +19,38 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), geolocation=(), microphone=()
   Content-Security-Policy: default-src 'self'; base-uri 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+
+# This rule deliberately sets no Cache-Control, so everything it matches keeps
+# the platform default — measured on the preview as `public, max-age=0,
+# must-revalidate` (a conditional request answered by the ETag with a 304).
+# That default is correct here rather than merely tolerable: the nine HTML
+# documents, robots.txt, the sitemap, and the favicon are not content-hashed,
+# while the stylesheets they reference are, so a document served from a stale
+# cache would point at a stylesheet that no longer exists and render unstyled.
+# Revalidating keeps documents and assets in step.
+#
+# Pinning that behaviour here was tried and rejected: `_headers` rules are
+# merged, not overridden, so a `Cache-Control` on `/*` and one on `/_astro/*`
+# arrive as a single field with two `max-age` directives — which RFC 9111 says
+# a cache must treat as stale, silently defeating the specific rule. Declaring
+# only the specific rules below keeps one `Cache-Control` per response.
+#
+# The hashed build output rule below is injected by @astrojs/cloudflare into
+# the built file (it stands down if a matching rule already sets
+# Cache-Control); it is asserted from the build output in
+# tests/unit/security-headers.test.ts rather than authored here.
+
+# Both self-hosted font subsets, cached for a year and never revalidated
+# (Gate 5 performance review, D-020). Without this rule the platform default
+# applies — `public, max-age=0, must-revalidate` — so every returning visitor
+# re-fetches or revalidates 48 KB of render-critical fonts.
+#
+# `immutable` is only safe while the bytes behind a URL never change, and
+# these filenames are not content-hashed. The deployment contract is therefore
+# that a font change ships under a new filename (the family, weight, and
+# subset are already encoded in the name). Change a font file's contents in
+# place and returning visitors keep the old face for up to a year; rename it
+# and they fetch the new one immediately. Pinned by
+# tests/unit/security-headers.test.ts.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

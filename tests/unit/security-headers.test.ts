@@ -134,9 +134,10 @@ describe('the committed _headers mirror', () => {
     const rules = parseHeadersFile(content);
 
     expect(rules.has('/*')).toBe(true);
-    // The only patterns are the catch-all and the adapter's immutable-cache
-    // rule for hashed assets.
-    expect([...rules.keys()].sort()).toEqual(['/*', '/_astro/*']);
+    // The only patterns are the catch-all, the adapter's immutable-cache rule
+    // for hashed assets, and the font cache rule added by the Gate 5
+    // performance review (D-020).
+    expect([...rules.keys()].sort()).toEqual(['/*', '/_astro/*', '/fonts/*']);
   });
 
   it('sets the immutable cache rule for hashed static assets', () => {
@@ -144,6 +145,18 @@ describe('the committed _headers mirror', () => {
     const rules = parseHeadersFile(content);
 
     expect(rules.get('/_astro/*')?.get('cache-control')).toBe(
+      'public, max-age=31536000, immutable',
+    );
+  });
+
+  it('sets a long-lived cache rule for the self-hosted fonts', () => {
+    // Measured on the preview before this rule existed: /fonts/* fell through
+    // to the platform default `public, max-age=0, must-revalidate`, so the
+    // 48 KB of render-critical subsets were revalidated on every visit.
+    const content = readFileSync(join(DIST, '_headers'), 'utf8');
+    const rules = parseHeadersFile(content);
+
+    expect(rules.get('/fonts/*')?.get('cache-control')).toBe(
       'public, max-age=31536000, immutable',
     );
   });

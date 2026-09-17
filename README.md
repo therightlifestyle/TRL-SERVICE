@@ -4,7 +4,9 @@ Phase 1 foundation for TRL's professional AI automation and business-systems ser
 
 ## Current status
 
-Gates 0–4 are complete and Gate 5 — Production Hardening is in progress. The core website is built on the founder-approved design system, and the contact form is live in code: `/contact/` is a server-rendered route that validates submissions (honeypot, Cloudflare Turnstile, server-side rules) and delivers them by email through Resend with accessible error states and preserved input. Gate 5 has landed security headers and a deliberate CSP (dual-write for static assets vs. the Worker route, with `challenges.cloudflare.com` as the one sanctioned exception — D-018), a fixed rate-limit plan for `POST /contact/`, and a scheduled manual accessibility pass.
+Gates 0–5 are complete and **Gate 6 — Deployment Readiness** is the active gate. The core website is built on the founder-approved design system, and the contact form is live in code: `/contact/` is a server-rendered route that validates submissions (honeypot, Cloudflare Turnstile, server-side rules) and delivers them by email through Resend with accessible error states and preserved input.
+
+Gate 5 — Production Hardening is done: security headers and a deliberate CSP (dual-write for static assets vs. the Worker route, with `challenges.cloudflare.com` as the one sanctioned exception — D-018), an implemented rate limiter on `POST /contact/` whose binding waits on the founder's account, a dependency re-review with no advisories and no copyleft code in either shipped artifact, a measured performance/SEO audit, an observability review, and a founder decision of **no analytics in Phase 1** (D-019). The reviews are in [`docs/TRL_GATE5_REVIEW.md`](./docs/TRL_GATE5_REVIEW.md).
 
 Nothing is deployed, and no hosting, email, or domain account exists — so delivery with real credentials is verified at the deployment gate. Locally and in CI the form runs against Cloudflare's published dummy Turnstile keys. Permanent project context and the execution plan live in [`docs/`](./docs/).
 
@@ -26,7 +28,7 @@ npm run preview               # serve the production build in the workerd runtim
 
 ```bash
 npm run typecheck   # astro check
-npm run test:unit   # content invariants, tokens/contrast, axe + security headers over the build, validation + endpoint pipeline
+npm run test:unit   # content invariants, tokens/contrast, axe + security headers over the build, build budgets, validation + endpoint pipeline
 npm run test:e2e    # Playwright: navigation, content, accessibility, and the real contact-form flow
 ```
 
@@ -43,7 +45,7 @@ CI runs all of the above plus a dependency audit on every pull request
 | `src/lib/contact.ts` | The whole submission pipeline as pure, unit-tested logic |
 | `src/lib/security.ts` | Security headers and both CSPs — the single source of truth |
 | `src/middleware.ts` | Applies the contact CSP to Worker-rendered `/contact/` responses |
-| `public/_headers` | Edge security headers + static-pages CSP for static asset responses |
+| `public/_headers` | Edge security headers, the static-pages CSP, and the cache policy for static asset responses |
 | `src/styles/tokens.css` | The single source of design token values |
 | `src/components/` | Accessible component primitives (incl. field, error summary) |
 | `src/pages/` | The routes — `/contact/` is the one server-rendered endpoint |
@@ -53,6 +55,7 @@ CI runs all of the above plus a dependency audit on every pull request
 ## Start with the project memory
 
 - [Master Context](./docs/TRL_MASTER_CONTEXT.md)
+- [Gate 5 Review: dependencies, performance/SEO, observability](./docs/TRL_GATE5_REVIEW.md)
 - [Rate Limiting Plan](./docs/TRL_RATE_LIMITING.md)
 - [Manual Accessibility Pass](./docs/TRL_MANUAL_ACCESSIBILITY_PASS.md)
 - [Operating State](./docs/TRL_OPERATING_STATE.md)
