@@ -1,5 +1,32 @@
 # TRL — Changelog
 
+## 2026-09-17 — Gate 6 close: deployment-readiness procedures, deploy-config artifact pin
+
+- **Gate 6 — Deployment Readiness is complete on the repository side.** The deployment-gate checklist is now procedure in `docs/TRL_DEPLOYMENT.md`, with an explicit split at the top between work that can be closed from inside the repository (this session's work) and work that only the founder can do (every remaining step).
+- **Repository-completable work recorded as done:**
+  - Environment-variable inventory and safe configuration documentation — a single table in `TRL_DEPLOYMENT.md` listing every build-time and runtime variable, its scope, what requires it, the dev default, and the safe-configuration rules.
+  - Production deployment procedure (build → configure → preview → verify → deploy → smoke test).
+  - Preview verification procedure (HTTP status, both CSPs, cache policy, common headers, enabled form, real Turnstile, sitemap and robots, 404).
+  - Smoke-test procedure (real visitor actions on the production origin, including one real enquiry end-to-end — D-016).
+  - Rollback procedure (last-good-deploy, what rollback cannot undo, investigate-before-redeploy, document).
+  - Recovery procedure (static-only fallback to any host, Worker-only fallback, account lockout, DNS recovery).
+  - Backup / repository-recovery guidance — what is preserved (the repository, the build artifact), what is not (secrets, Cloudflare account state, Resend account state), and how each is recovered.
+  - Domain/DNS readiness checklist, Cloudflare deployment checklist, Turnstile production-key checklist, Resend production-email checklist, rate-limit namespace configuration checklist, final platform security checklist (framing protection + HSTS).
+  - GitHub Pages / Jekyll transition procedure — numbered, with the explicit reason the repository cannot do it (the token gets `403` on the Pages admin endpoint), and a follow-up-commit pattern so `_config.yml` is deleted only after the red `pages build and deployment` run is gone.
+- **Deploy-config artifact pin (`tests/unit/wrangler-config.test.ts`, 4 tests):**
+  - `wrangler.jsonc` parses (after the comment is stripped) to the founder-supplied runtime config — `name`, `compatibility_date`, `observability`, and **no** `ratelimits` key (the binding lives in a comment, not in JSON).
+  - The rate-limit comment carries the documented block (`"name": "CONTACT_RATE_LIMITER"`, `"simple": { "limit": 10, "period": 10 }`, and a `<founder-supplied ...>` placeholder), and no integer-shaped `"namespace_id"` may be committed. This is the test that catches infrastructure fabrication.
+  - No production credentials (Turnstile sitekey/secret, Resend API key, contact email) appear anywhere in `wrangler.jsonc`.
+  - The generated deploy config (`dist/server/wrangler.json`) carries `observability: { enabled: true }` through — a soft skip when the file is absent (local-only runs without a build), a hard assertion when CI has run the build first.
+- **Decision recorded — D-021:** the explicit split between repository-completable and founder-only work, and the rationale that this gate does not invent any of the things the founder owns.
+- **Verified:**
+  - `npm run typecheck` → 0 errors / 0 warnings / 0 hints (46 files; +1 for the new test).
+  - `npm run test:unit` → **245 tests passing** across 8 files (was 241; +4 from the new wrangler-config suite). No regression in the existing security-headers, build-budget, contact-endpoint, contact-validation, design-tokens, content-invariants, or rendered-pages suites.
+  - `npm run build` clean; the generated `dist/server/wrangler.json` continues to read `"ratelimits":[]` and to carry `observability` through, exactly as `TRL_GATE5_REVIEW.md` recorded.
+  - `npm audit` and `npm audit --omit=dev` → 0 vulnerabilities.
+- **Operating state, phase-1 plan, decisions, deployment, and this changelog updated** to the post-Gate-6 state. The "Open questions requiring founder approval" list in `TRL_OPERATING_STATE.md` now points every deployment-gate item at the specific procedure in `TRL_DEPLOYMENT.md`.
+- **No accounts, credentials, DNS changes, deployments, dependencies, copy changes, or generated imagery.** Gate 6's repository work is procedures and a test; the rest belongs to the founder at the deployment gate and is listed in `TRL_DEPLOYMENT.md`'s founder-only checklist.
+
 ## 2026-09-17 — Gate 5 close: dependency, performance/SEO, and observability reviews
 
 - **Completed the three reviews Gate 5 had left, plus the founder's analytics decision, and recorded them in `docs/TRL_GATE5_REVIEW.md`.** Gate 5 — Production Hardening is now complete.

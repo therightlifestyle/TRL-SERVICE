@@ -1,37 +1,61 @@
 # TRL — Session Handoff
 
-_Last updated: 2026-09-17 (Gate 5 close)._ 
+_Last updated: 2026-09-17 (Gate 6 close — repository-side deployment
+procedures, deploy-config artifact pin, and the explicit repository /
+founder split.)_
 
-## Latest session: Gate 5 completed — dependencies, performance/SEO, observability, analytics
+## Latest session: Gate 6 completed on the repository side — deployment-readiness procedures
 
-PR #8 is **merged into `main`** (merge commit `3194c03`) with all three CI jobs green, and the
-`pages build and deployment` run on `main` is green as well — the `_config.yml` containment holds.
-This session started from that commit and closed the four items Gate 5 had left, recording them in
-`docs/TRL_GATE5_REVIEW.md`:
+Gates 0–5 are complete and merged into `main`. **Gate 6 — Deployment
+Readiness is complete on the repository side** and **Gate 7 — Final
+Verification is the active gate**. The deployment-gate checklist is now
+procedure in `docs/TRL_DEPLOYMENT.md`, with an explicit split at the top
+between work the repository can close (this session's work) and work only
+the founder can do (every remaining step).
 
-1. **Dependency re-review.** 0 advisories on both the full tree and production-only; 3 production
-   dependencies, all exact-pinned; 345 installed packages, every one declaring a licence. The
-   non-permissive licences were named and located (MPL-2.0: `lightningcss` via `vite`, `axe-core`;
-   LGPL-3.0-or-later and Apache+LGPL+MIT: `@img/sharp*` via `astro > sharp`; Python-2.0, BlueOak,
-   CC0 elsewhere) and then verified **absent from both shipped artifacts**: no
-   `sharp`/`libvips`/`lightningcss` reference in the 688 KB Worker bundle, and no JavaScript in
-   `dist/client` at all. TypeScript 6.0.3 → 7.0.2 and wrangler 4.133.0 → 4.134.0 are recorded as
-   reviewed-and-deferred.
-2. **Performance audit, measured.** Every page weighed from the real build output and the preview's
-   response headers. Two defects found and fixed: the **display font was not preloaded** (Newsreader
-   sets every `h1`/`h2`; only Manrope was preloaded) and **fonts had no cache policy** (measured as
-   `public, max-age=0, must-revalidate`, revalidating 48 KB per visit). Added
-   `tests/unit/build-budget.test.ts` (7 tests) so the numbers are pinned, not just reported.
-3. **SEO audit** re-verified end to end: real `404` status, `robots.txt` + a six-URL sitemap that
-   excludes the `noindex` pages, per-page canonical/OG/JSON-LD, `/about` → `307` → `/about/`. No
-   `og:image`, deliberately — no approved imagery exists.
-4. **Observability review.** Verified that `observability` survives into the generated deploy config
-   and that the `ratelimits` array is where the founder's binding will land. Documented the exact
-   log contract (one PII-free JSON line per request; 7 outcomes, 11 reasons) and the gaps: no push
-   alert on `system-error`, no uptime check, plan-bounded retention (Free: 3 days), no client-side
-   error signal. The inbox remains the system of record and the de facto alert.
-5. **Analytics: founder decision — none in Phase 1 (D-019).** Cloudflare Web Analytics was
-   considered and declined because it still injects a third-party script.
+### What this session recorded as done
+
+1. **Repository-side procedures in `docs/TRL_DEPLOYMENT.md`** — environment-
+   variable inventory, production deployment procedure, preview verification
+   procedure, smoke-test procedure, rollback procedure, recovery procedure,
+   backup / repository-recovery guidance, domain/DNS readiness checklist,
+   Cloudflare deployment checklist, Turnstile production-key checklist,
+   Resend production-email checklist, rate-limit namespace configuration
+   checklist, final platform security checklist (framing protection + HSTS),
+   and a numbered GitHub Pages / Jekyll transition procedure. The split
+   between repository-completable and founder-only work is recorded at the
+   top of that file.
+2. **Deploy-config artifact pin** — new `tests/unit/wrangler-config.test.ts`
+   (4 tests): `wrangler.jsonc` parses to the founder-supplied runtime config
+   and carries no `ratelimits` JSON key (the binding lives in a comment);
+   the rate-limit comment carries the documented block with a
+   `<founder-supplied ...>` placeholder and no integer-shaped
+   `namespace_id` may be committed (catches infrastructure fabrication); no
+   production credentials (Turnstile sitekey/secret, Resend API key,
+   contact email) appear anywhere in `wrangler.jsonc`; the generated
+   `dist/server/wrangler.json` carries `observability: { enabled: true }`
+   through.
+3. **Decision recorded — D-021** in `docs/TRL_DECISIONS.md`: the explicit
+   repository / founder split and the rationale that Gate 6 does not invent
+   any of the things the founder owns.
+4. **Operating state, phase-1 plan, decisions, deployment, and changelog
+   updated** to the post-Gate-6 state. The "Open questions requiring founder
+   approval" list in `TRL_OPERATING_STATE.md` now points every deployment-
+   gate item at the specific procedure in `TRL_DEPLOYMENT.md`.
+
+### What this session did not do (and why)
+
+- No accounts created. No DNS changes. No deployment. No secrets in the
+  repository, no fake credentials, no fabricated infrastructure.
+- No edits to `wrangler.jsonc`'s `namespace_id` value (it is still
+  `<founder-supplied positive integer, as a string>` in a comment).
+- No edits to `_config.yml`; the GitHub Pages transition is founder-owned.
+- No edits to `public/_headers` for framing protection or HSTS — those are
+  platform rules on the final HTTPS domain, deliberately not in the
+  application code (D-018).
+- No edits to the rate-limit binding's `limit` / `period` values — those
+  are set (`10 / 10s`) and pinned by `TRL_RATE_LIMITING.md` and the
+  existing unit tests.
 
 ## The finding worth carrying forward
 
@@ -46,7 +70,7 @@ on that evidence and is now prohibited in writing, in `public/_headers` and in D
 
 ## Current status
 
-Gates 0–5 complete. **Gate 6 — Deployment Readiness is the active gate.** Nothing is deployed; no
+Gates 0–6 complete. **Gate 7 — Final Verification is the active gate.** Nothing is deployed; no
 hosting, Turnstile, Resend, domain, or DNS change exists, and no credentials exist anywhere in the
 repository. The site builds to a deployable artifact that has never been uploaded.
 
@@ -54,50 +78,45 @@ repository. The site builds to a deployable artifact that has never been uploade
 | --- | --- |
 | 0–4 Repository reset, architecture, design system, core website, business flow | Complete (merged) |
 | 5 Production hardening | Complete — headers/CSP (D-018), rate limiter, dependency review, performance/SEO, observability, analytics decision (D-019), cache policy (D-020) |
-| 6–8 Deployment readiness, final verification, founder launch approval | Not started — the deployment gate |
+| 6 Deployment readiness | Complete (repository side) — procedures in `TRL_DEPLOYMENT.md`, deploy-config artifact pin in `tests/unit/wrangler-config.test.ts`, decision D-021 |
+| 7 Final verification | Not started — needs a deployed preview and a human with a browser |
+| 8 Founder launch approval | Not started — founder only |
 
 ## This session's changes
 
-- `src/layouts/BaseLayout.astro` — preloads both render-critical font subsets (Newsreader added),
-  with `as`/`type`/`crossorigin` and a comment explaining why a partial preload list is the bug.
-- `public/_headers` — added the `/fonts/*` immutable cache rule; documented why the catch-all sets
-  no `Cache-Control`, why the documents revalidate, and what the font-cache contract is.
-- `tests/unit/build-budget.test.ts` — new: zero client JS, no executable `<script>` beyond JSON-LD,
-  both preloads on all nine pages, `font-display: swap`, and three byte ceilings.
-- `tests/unit/security-headers.test.ts` — the `_headers` rule-set assertion now expects the
-  three-rule set, plus a new test pinning the font cache rule.
-- `docs/TRL_GATE5_REVIEW.md` — new: the three reviews and the analytics decision with their evidence.
-- `docs/TRL_DECISIONS.md` — **D-019** (no analytics in Phase 1), **D-020** (cache policy).
-- Operating state, phase-1 plan, architecture, security, deployment, changelog, and this handoff
-  updated to the post-Gate-5 state; `TRL_DEPLOYMENT.md` also corrected — the generated deploy config
-  is `dist/server/wrangler.json`, not `dist/client/wrangler.json`.
+- `docs/TRL_DEPLOYMENT.md` — expanded from a deployment-gate checklist into
+  full procedure: build → configure → preview → verify → deploy → smoke
+  test, plus rollback, recovery, backup/repository-recovery, domain/DNS
+  readiness, Cloudflare / Turnstile / Resend / rate-limit / final
+  platform-security checklists, and a numbered GitHub Pages transition
+  procedure. Repository-completable and founder-only work are now two
+  explicit lists at the top.
+- `tests/unit/wrangler-config.test.ts` — new: 4 tests pinning the
+  deploy-config artifacts (the `ratelimits` comment, no fabricated
+  `namespace_id`, no production credentials, `observability` in the
+  generated deploy config).
+- `docs/TRL_OPERATING_STATE.md` — advanced from Gate 6 active to Gate 6
+  complete (repository side) and Gate 7 active. Every open question now
+  points at the specific procedure in `TRL_DEPLOYMENT.md`.
+- `docs/TRL_PHASE_1_PLAN.md` — Gate 6 is now recorded as complete on the
+  repository side with a procedure-by-procedure summary; Gate 7 is active.
+- `docs/TRL_DECISIONS.md` — **D-021** (the repository / founder split at
+  Gate 6).
+- `docs/TRL_CHANGELOG.md` — new entry recording the Gate 6 close.
 
 ## Verification (re-run this session)
 
-- `npm run typecheck` → `astro check`: **0 errors, 0 warnings, 0 hints** (45 files).
-- `npm run test:unit` → **241 tests passing** across 7 files (was 233; +7 build budget, +1 font cache
-  rule). `npm audit` and `npm audit --omit=dev` → 0 vulnerabilities.
-- `npm run build` → clean; `dist/client/_headers` carries three rules (`/*`, the adapter-injected
-  `/_astro/*`, `/fonts/*`) with **one** `Cache-Control` per response.
-- Against `astro preview` (workerd): `/`, `/about/`, `/404.html`, `robots.txt`, the sitemap, and the
-  favicon answer `public, max-age=0, must-revalidate` and answer `304` to a matching
-  `If-None-Match`; `/_astro/*` and `/fonts/*` answer `public, max-age=31536000, immutable`; unknown
-  routes answer a real `404`; `/contact/` answers the contact CSP with the Turnstile exception; the
-  home page's two font preloads are present in the built HTML.
-- **The browser suite still cannot run in the sandbox** (no browser binaries and no CDN reachability),
-  so CI remains the only place the e2e suite executes. It must pass on CI before this merge.
+- `npm run typecheck` → `astro check`: **0 errors, 0 warnings, 0 hints** (46 files; +1 for the new test).
+- `npm run test:unit` → **245 tests passing** across 8 files (was 241; +4 from the new wrangler-config suite). The existing security-headers, build-budget, contact-endpoint, contact-validation, design-tokens, content-invariants, and rendered-pages suites all pass unchanged. `npm audit` and `npm audit --omit=dev` → 0 vulnerabilities.
+- `npm run build` clean; `dist/client/_headers` continues to carry three rules with **one** `Cache-Control` per response; the generated `dist/server/wrangler.json` continues to read `"ratelimits":[]` and to carry `observability` through, exactly as `TRL_GATE5_REVIEW.md` recorded.
+- **The browser suite still cannot run in the sandbox** (no browser binaries and no CDN reachability), so CI remains the only place the e2e suite executes. It must pass on CI before any merge.
 
 ## Remaining work
 
-- **Gate 6 — Deployment Readiness** (documentation and readiness only, under the no-deploy constraint).
-- **Deployment gate (founder actions, all blocked on accounts):** Cloudflare/Turnstile/Resend accounts;
-  production keys; DNS and the custom domain; one real enquiry end-to-end; the rate-limit
-  `namespace_id` and its burst check; framing/HSTS platform rules; disable GitHub Pages (Settings →
-  Pages) after which `_config.yml` can be deleted.
-- **Manual accessibility pass** — needs a human with a browser and a screen reader
-  (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Not performed, and not counted as performed.
-- **Gate 7** — Lighthouse/real-device run against the deployed origin (impossible here: no browser,
-  no public origin).
+- **Gate 7 — Final Verification** — needs the founder's deployed preview (or production) and a human with a browser. The repository is ready for it: the manual accessibility pass (`TRL_MANUAL_ACCESSIBILITY_PASS.md`) and the Lighthouse / real-device run (Gate 7 / `TRL_GATE5_REVIEW.md`) are scheduled there. One real enquiry end-to-end (D-016) and the rate-limit burst check on the deployed origin are also Gate 7.
+- **Deployment gate (founder actions, all blocked on accounts):** Cloudflare / Turnstile / Resend accounts; production keys; DNS and the custom domain; one real enquiry end-to-end; the rate-limit `namespace_id` and its burst check; framing/HSTS platform rules; disable GitHub Pages (Settings → Pages) after which `_config.yml` can be deleted. The full checklist is at the end of `TRL_DEPLOYMENT.md`.
+- **Manual accessibility pass** — needs a human with a browser and a screen reader (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Not performed, and not counted as performed.
+- **Gate 8** — founder alone decides whether the system goes public.
 
 ## Known issues and risks
 
@@ -109,15 +128,21 @@ repository. The site builds to a deployable artifact that has never been uploade
 - The preview and build log `Unable to fetch the Request.cf object!` plus a TLS warning — sandbox
   network noise, present since before Gate 5.
 - `og:image` is absent; if wanted, it needs a founder-approved asset.
+- The deployment documentation in `TRL_DEPLOYMENT.md` is comprehensive but **must be read as a
+  procedure, not a self-executing checklist**: every founder-only checkbox requires a real account,
+  a real DNS change, or a real secret that the repository does not own.
 
 ## Git
 
-- Branch: `arena/01a0b0b5-trl-service`, based on `main` at `3194c03` (the PR #8 merge).
+- Branch: `arena/01a0b0cb-trl-service`, based on `main` at `aaef3bf` (the PR #9 merge).
 - Commit, push to that branch, and open the PR; CI must be green before merge.
 
 ## NEXT SINGLE ACTION
 
-Commit this Gate 5 close, push `arena/01a0b0b5-trl-service`, open the PR, and confirm all three CI
-jobs pass (the e2e job is the only place the browser suite runs). Then begin **Gate 6 — Deployment
-Readiness**: turn the deployment checklist into procedure, with no account, DNS change, or
-deployment until the founder authorizes it.
+Commit this Gate 6 close, push `arena/01a0b0cb-trl-service`, open the PR, and confirm all three CI
+jobs pass (the e2e job is the only place the browser suite runs). The repository is now ready for
+the founder's deployment-gate actions — every step is in `TRL_DEPLOYMENT.md`, and the
+deploy-config artifact is pinned. The next agent session, when one begins, should run **Gate 7 —
+Final Verification** against the founder's deployed preview: Lighthouse / real-device performance,
+the manual accessibility pass, one real enquiry end-to-end (D-016), and the rate-limit burst
+check.

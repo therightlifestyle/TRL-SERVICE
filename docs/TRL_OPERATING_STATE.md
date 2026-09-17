@@ -1,6 +1,10 @@
 # TRL — Operating State
 
-_Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 6, Deployment Readiness.)_
+_Last updated: 2026-09-17 (Gate 6 — Deployment Readiness repository-side work
+complete. Repository-side procedures, checklists, and the
+deploy-config-artifact test are in place. Founder-only actions
+(accounts, DNS, real credentials, real delivery verification) remain
+explicitly outside the repository. Next: Gate 7 — Final Verification.)_
 
 ## Current phase
 
@@ -8,7 +12,24 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 
 ## Current gate
 
-**Gate 5 — Production Hardening is complete.** Security headers and CSP (D-018), the contact-endpoint rate limiter, the dependency re-review, the performance/SEO audit, the monitoring/observability review, and the founder's analytics decision (D-019 — Phase 1 ships with none) are all done; the four reviews are recorded in `TRL_GATE5_REVIEW.md`, and the manual accessibility pass remains scheduled for a human with a browser (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete. **Gate 6 — Deployment Readiness is the active gate.**
+**Gate 6 — Deployment Readiness is complete on the repository side.** The
+deployment-gate checklist is now procedure: build → configure → preview →
+verify → deploy → smoke test, plus rollback, recovery, backup /
+repository-recovery guidance, domain/DNS readiness, Cloudflare / Turnstile /
+Resend / rate-limit / final platform-security checklists, and a numbered
+GitHub Pages transition procedure. The split between repository-completable
+work and founder-only external actions is recorded at the top of
+`TRL_DEPLOYMENT.md`. A new `tests/unit/wrangler-config.test.ts` (4 tests)
+pins the deploy-config artifacts: the `ratelimits` block in `wrangler.jsonc`
+remains a comment with a placeholder (no fabricated `namespace_id`), no
+production credentials may be committed, and the generated
+`dist/server/wrangler.json` carries `observability: { enabled: true }`
+through. **Gate 7 — Final Verification is the active gate.**
+
+Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System),
+Gate 3 (Core Website), Gate 4 (Business Flow), Gate 5 (Production Hardening),
+and Gate 6 (Deployment Readiness) are complete. **Gate 7 — Final
+Verification is the active gate.**
 
 ## Status
 
@@ -20,7 +41,7 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 - CI: GitHub Actions runs typecheck, build, unit/static-accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit on every pull request.
 - Production hardening (Gate 5): **complete.** Security headers and CSP are implemented as a dual-write (D-018) — `public/_headers` for static responses (`script-src 'none'`) and `src/middleware.ts` for the Worker-rendered `/contact/` (the static CSP plus the `challenges.cloudflare.com` Turnstile exception). Rate limiting for `POST /contact/` is **implemented**, not just planned: the endpoint reads `env.CONTACT_RATE_LIMITER`, answers `429` with the same generic preserved-input state as `503`, and fails open by contract when the binding is absent — the `ratelimits` block in `wrangler.jsonc` stays commented out pending the founder's account-scoped `namespace_id`. The performance/SEO audit found and fixed two defects (the unpreloaded display font, and fonts with no cache policy) and pinned the measured budgets in `tests/unit/build-budget.test.ts`; the dependency re-review found no advisories and verified no copyleft code in either shipped artifact; the observability review verified that Workers Logs are enabled in the generated deploy config and documented the log contract and its gaps. Analytics: **none in Phase 1** (D-019). All four reviews are in `TRL_GATE5_REVIEW.md`. The manual accessibility pass, including the real Turnstile widget's rendering/size (D-017), is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md` and is a human step.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
-- Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
+- Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist. **Gate 6 (repository side) is complete** — procedures, checklists, and the `wrangler.jsonc` artifact pin are in place; every remaining deployment step is founder-owned (accounts, secrets, DNS, the rate-limit `namespace_id`, framing/HSTS platform rules, the GitHub Pages admin transition, and the real-delivery + burst-check verifications). See `TRL_DEPLOYMENT.md` for the full split.
 - Production launch: not authorized.
 
 ## Active constraints
@@ -60,12 +81,14 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 ## Open questions requiring founder approval
 
 - Analytics provider or none — **resolved at Gate 5: none in Phase 1 (D-019).** Revisit at Gate 7 or when Phase 2 begins.
-- The rate-limit binding's `namespace_id` (account-scoped integer) and the Cloudflare account that provisions it — deployment gate (`TRL_RATE_LIMITING.md`).
-- Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — deployment gate (D-018 note).
-- GitHub Pages is still enabled with the legacy Jekyll builder sourced from `main`; the founder should disable it or switch its source to "GitHub Actions" in Settings → Pages (the repository token gets `403`). `_config.yml` contains it until then (`TRL_DEPLOYMENT.md`).
+- The rate-limit binding's `namespace_id` (account-scoped integer) and the Cloudflare account that provisions it — **deployment gate**, procedure in `TRL_DEPLOYMENT.md` ("Rate-limit namespace configuration"); `namespace_id` stays a placeholder in `wrangler.jsonc` until the founder's account exists.
+- Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — **deployment gate**, procedure in `TRL_DEPLOYMENT.md` ("Final platform security checklist"); deliberately not in `public/_headers` or `src/middleware.ts` (D-018 note).
+- GitHub Pages is still enabled with the legacy Jekyll builder sourced from `main`; the founder should disable it or switch its source to "GitHub Actions" in Settings → Pages (the repository token gets `403`). **Numbered procedure in `TRL_DEPLOYMENT.md` ("GitHub Pages transition")**, with `_config.yml` deletion as a separate follow-up commit.
 - Optional, if wanted before launch: a founder-approved image for `og:image`, currently absent because no imagery is approved (`TRL_GATE5_REVIEW.md`).
 - Payment provider and payment/account ownership (after first release).
 - Final legal text and jurisdiction-specific requirements. The Privacy and Terms pages are published as clearly labelled drafts and are `noindex` until reviewed; Gate 4 added truthful Turnstile and Resend disclosures to the privacy draft.
 - Any founder biography, credentials, or imagery beyond facts already approved.
 - Public launch timing and approval.
 - The D-014 platform refinement (Cloudflare Workers with static assets as the concrete form of the approved Cloudflare hosting direction).
+- Manual accessibility pass (`TRL_MANUAL_ACCESSIBILITY_PASS.md`) — needs a human with a browser and a screen reader. Not performed, and not counted as performed.
+- One real enquiry end-to-end against the production deployment (D-016). Procedure in `TRL_DEPLOYMENT.md` ("Smoke-test procedure", step 6).

@@ -4,9 +4,11 @@ Phase 1 foundation for TRL's professional AI automation and business-systems ser
 
 ## Current status
 
-Gates 0–5 are complete and **Gate 6 — Deployment Readiness** is the active gate. The core website is built on the founder-approved design system, and the contact form is live in code: `/contact/` is a server-rendered route that validates submissions (honeypot, Cloudflare Turnstile, server-side rules) and delivers them by email through Resend with accessible error states and preserved input.
+Gates 0–6 are complete. **Gate 7 — Final Verification** is the active gate. The core website is built on the founder-approved design system, and the contact form is live in code: `/contact/` is a server-rendered route that validates submissions (honeypot, Cloudflare Turnstile, server-side rules) and delivers them by email through Resend with accessible error states and preserved input.
 
 Gate 5 — Production Hardening is done: security headers and a deliberate CSP (dual-write for static assets vs. the Worker route, with `challenges.cloudflare.com` as the one sanctioned exception — D-018), an implemented rate limiter on `POST /contact/` whose binding waits on the founder's account, a dependency re-review with no advisories and no copyleft code in either shipped artifact, a measured performance/SEO audit, an observability review, and a founder decision of **no analytics in Phase 1** (D-019). The reviews are in [`docs/TRL_GATE5_REVIEW.md`](./docs/TRL_GATE5_REVIEW.md).
+
+Gate 6 — Deployment Readiness is complete on the repository side: full deployment/preview/smoke/rollback/recovery procedures, domain/DNS readiness, Cloudflare / Turnstile / Resend / rate-limit / final platform-security checklists, a numbered GitHub Pages transition procedure, and a deploy-config artifact pin in [`tests/unit/wrangler-config.test.ts`](./tests/unit/wrangler-config.test.ts) — all in [`docs/TRL_DEPLOYMENT.md`](./docs/TRL_DEPLOYMENT.md), with an explicit split between repository-completable and founder-only work.
 
 Nothing is deployed, and no hosting, email, or domain account exists — so delivery with real credentials is verified at the deployment gate. Locally and in CI the form runs against Cloudflare's published dummy Turnstile keys. Permanent project context and the execution plan live in [`docs/`](./docs/).
 

@@ -53,13 +53,16 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 - Observability: `observability` verified through to the generated deploy config; the PII-free log contract and its gaps documented, with Cloudflare's plan limits recorded (`TRL_GATE5_REVIEW.md`).
 - Analytics: **founder decision — none in Phase 1 (D-019).**
 
-### Gate 6 — Deployment Readiness (active)
+### Gate 6 — Deployment Readiness (complete on the repository side, 2026-09-17)
 
-- Document environment variables, hosting setup, domain readiness, backups, rollback, recovery, and controlled deployment.
+- **Procedures** — `TRL_DEPLOYMENT.md` is now procedure, not a checklist: build → configure → preview → verify → deploy → smoke test, plus rollback, recovery, backup/repository-recovery guidance, domain/DNS readiness, Cloudflare / Turnstile / Resend / rate-limit / final platform-security checklists, and a numbered GitHub Pages transition procedure. The split between repository-completable work and founder-only external actions is recorded at the top of that document.
+- **Environment-variable inventory and safe configuration documentation** — a single table in `TRL_DEPLOYMENT.md` listing every build-time and runtime variable, its scope, what requires it, the dev default, and the safe-configuration rules; `.env.example` and `.dev.vars.example` carry the committed placeholder keys.
+- **Deploy-config artifact pin** — `tests/unit/wrangler-config.test.ts` (4 tests) reads `wrangler.jsonc` and asserts that the `ratelimits` block remains a comment with a placeholder, that no fabricated `namespace_id` (a quoted digit string) has been committed, that no production credentials are present in the file, and that the generated `dist/server/wrangler.json` carries `observability: { enabled: true }` through.
+- **Operational rule** — every step that needs a real account (Cloudflare, Turnstile, Resend), a real DNS change (custom domain, Resend domain verification, GitHub Pages setting), or a real secret is listed as a founder-only action with a checkbox. None was closed from inside the repository.
 
-### Gate 7 — Final Verification
+### Gate 7 — Final Verification (active)
 
-- Run functional, responsive, accessibility, security, performance, content, and repository cleanliness checks.
+- Run functional, responsive, accessibility, security, performance, content, and repository cleanliness checks against the deployed preview and production origin. The Lighthouse / real-device performance run, the manual accessibility pass (`TRL_MANUAL_ACCESSIBILITY_PASS.md`), and one real enquiry end-to-end (D-016) all belong here.
 
 ### Gate 8 — Founder Launch Approval
 
@@ -67,6 +70,4 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-**Gate 6 — Deployment Readiness.** Gate 5 is complete, so the next work is documentation and readiness rather than more hardening: environment variables and platform setup, domain readiness, backup/rollback/recovery, preview verification, and the controlled-deployment procedure — all of which is founder-authorized work, with no account, DNS change, or deployment until the founder authorizes it. `TRL_DEPLOYMENT.md` already carries the deployment-gate checklist and direction; Gate 6 turns the parts of it still marked "planned" into procedure.
-
-**Nothing is deployed, and no credentials exist yet.** Every remaining item that needs a real account is a founder action attached to the deployment gate: real-credential delivery verification, production Turnstile keys, the rate-limit `namespace_id` plus its burst check, framing/HSTS platform rules, disabling GitHub Pages, and the optional `og:image`. The manual accessibility pass also needs a human with a browser. None of these can be closed from inside the repository, and none of them should be faked.
+**Gate 7 — Final Verification.** Gate 6 is repository-complete, so the next work is verification on a real deployed preview rather than more readiness: the Lighthouse / real-device performance run, the manual keyboard/zoom/screen-reader accessibility pass, the real-delivery end-to-end check (D-016), and the rate-limit burst check on the deployed origin. None of these can be done from inside the authoring sandbox; the repository is ready for them. **Nothing is deployed, and no credentials exist yet.** Every item that needs a real account or DNS change remains a founder action and is listed at the end of `TRL_DEPLOYMENT.md`. The next agent session, when one begins, should run those checks against the founder's deployed preview and only mark Gate 7 complete when each one is recorded pass/fail in `TRL_MANUAL_ACCESSIBILITY_PASS.md` or its successor.
