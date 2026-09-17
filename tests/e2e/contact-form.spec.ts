@@ -81,7 +81,9 @@ test.describe('form structure (GET)', () => {
     await expect(honeypot).toBeAttached();
     await expect(honeypot).toHaveAttribute('tabindex', '-1');
     await expect(page.locator('.honeypot')).toHaveAttribute('aria-hidden', 'true');
-    await expect(honeypot).not.toBeVisible();
+    // The honeypot is parked offscreen rather than display:none, so it still
+    // has a bounding box — assert it is out of the viewport instead.
+    await expect(honeypot).not.toBeInViewport();
   });
 
   test('loads only the sanctioned third-party script', async ({ page }) => {
