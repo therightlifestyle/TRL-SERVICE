@@ -58,3 +58,11 @@
 - **Status:** Founder-approved in session (Gate 1)
 - **Decision:** The first release includes Home, About, Services, AI Solutions, Offers/Pricing, Contact, and Privacy/Terms structure.
 - **Consequence:** No client accounts, CMS, database, payments, blog, or unearned social proof in the first release; all scope exclusions are recorded in `TRL_USER_JOURNEYS.md`.
+
+## D-009 — Visual direction is quiet authority
+
+- **Date:** 2026-09-17
+- **Status:** Founder-approved in session (Gate 2)
+- **Decision:** Use a quiet-authority, light-first visual system with a text-only `TRL / The Right Lifestyle` wordmark and purpose-built abstract systems graphics.
+- **Why:** This direction supports the premium, minimal, precise, trustworthy positioning without presenting TRL as a loud AI novelty brand or inventing an unapproved identity symbol.
+- **Consequence:** Gate 3 implements the Newsreader/Manrope typography direction, warm-ivory/deep-ink/restrained-blue semantic palette, accessible components, and interaction rules defined in `TRL_DESIGN_SYSTEM.md`. Do not introduce a logo symbol, dark-first theme, stock/synthetic business photography, fabricated interfaces/data, neon effects, or AI visual clichés without founder approval. Font files are self-hosted with license files and no third-party runtime font request.

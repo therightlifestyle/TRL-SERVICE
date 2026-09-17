@@ -26,7 +26,7 @@ _Last updated: 2026-09-17 (Gate 1). The stack below is founder-approved and reco
 | Layer | Choice | Notes |
 | --- | --- | --- |
 | Framework | Astro with TypeScript | Content-first; pages compile to static HTML with near-zero client JavaScript; current stable line (7.x as of September 2026). Exact version pinned at the Gate 3 scaffold with a committed lockfile. |
-| Styling | Plain modern CSS with design tokens (custom properties) | No CSS framework; the Phase 1 design system (Gate 2) is small and bespoke. |
+| Styling | Plain modern CSS with design tokens (custom properties) | No CSS framework; the founder-confirmed Phase 1 visual and interaction contract is recorded in `TRL_DESIGN_SYSTEM.md`. |
 | Form endpoint | One Astro server endpoint deployed as a Cloudflare Pages Function | Same-origin POST with server-side validation; whether it is an Astro action or a plain API route is decided at the scaffold. |
 | Email delivery | Resend transactional email API to the approved address | Free tier (3,000 emails/month, 100/day) covers expected lead volume; no database. The provider can be swapped behind the endpoint without changing the flow. |
 | Spam protection | Cloudflare Turnstile plus a honeypot | Free and privacy-friendly. |

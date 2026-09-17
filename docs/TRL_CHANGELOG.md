@@ -15,3 +15,12 @@
 - Updated the decision log, operating state, execution plan, deployment direction, security control mapping, README, and this changelog.
 - Verified Git history integrity (unshallowed the clone; baseline `9e5d06c` confirmed) and fact-checked 2026 platform claims used in the recommendations.
 - No application code, accounts, keys, or infrastructure were created.
+
+## 2026-09-17 — Gate 2: design system
+
+- Founder confirmed the quiet-authority, light-first visual direction with a text-only wordmark and abstract systems graphics.
+- Added `TRL_DESIGN_SYSTEM.md` with typography, semantic colors, spacing, layout, identity, visual-language, component, form, responsive, focus, motion, and accessibility specifications.
+- Selected self-hosted Newsreader and Manrope with explicit fallbacks and a requirement to include canonical font licenses during implementation.
+- Recorded the visual direction as D-009 and advanced the operating state, execution plan, README, and handoff to Gate 3.
+- Independently calculated the documented contrast ratios for approved semantic color pairings.
+- No application code, font binaries, generated images, dependencies, accounts, credentials, or infrastructure were created.

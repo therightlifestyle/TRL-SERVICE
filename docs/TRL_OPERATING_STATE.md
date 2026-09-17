@@ -8,12 +8,13 @@ _Last updated: 2026-09-17_
 
 ## Current gate
 
-**Gate 2 — Design System** is the active gate for the next session. Gate 0 (Repository Reset) and Gate 1 (Architecture) are complete.
+**Gate 3 — Core Website** is the active gate for the next session. Gate 0 (Repository Reset), Gate 1 (Architecture), and Gate 2 (Design System) are complete.
 
 ## Status
 
 - Architecture: recorded and founder-approved in `TRL_ARCHITECTURE.md` — Astro with TypeScript, Cloudflare Pages, email-only inquiry delivery, full core site scope.
 - User journeys and first-release scope: recorded in `TRL_USER_JOURNEYS.md`.
+- Design system: recorded in `TRL_DESIGN_SYSTEM.md`; founder-confirmed direction is quiet authority, light-first, a text-only wordmark, and abstract systems graphics.
 - Website: not started.
 - Lead capture/contact workflow: designed, not implemented.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
@@ -23,18 +24,19 @@ _Last updated: 2026-09-17_
 ## Active constraints
 
 - Do not build the entire long-term TRL ecosystem in Phase 1.
-- Do not invent pricing, claims, credentials, or infrastructure ownership decisions.
+- Do not invent pricing, claims, credentials, proof, or infrastructure ownership decisions.
+- Implement the founder-confirmed design direction and semantic tokens from `TRL_DESIGN_SYSTEM.md`; record intentional deviations.
 - Do not deploy publicly, create hosting/email accounts, or modify DNS without explicit founder authorization.
 - Add dependencies only as recorded in the architecture, with a lockfile review at the Gate 3 scaffold.
 
-## Gate 2 exit criteria
+## Gate 3 exit criteria
 
-Typography, colors, spacing, layout, components, focus states, responsive rules, and reduced-motion behavior are defined and documented; the direction is validated against the premium, minimal, precise, trustworthy positioning; and the founder confirms the visual direction.
+The Astro project has a reviewed lockfile and CI; the design tokens and core accessible components are implemented; Home, About, Services, AI Solutions, Offers, Contact, Privacy, and Terms routes render with truthful content; semantic structure, metadata, canonical handling, robots, and sitemap foundations exist; and typecheck, build, unit, and applicable end-to-end checks pass. The contact form's live server workflow remains Gate 4 work.
 
 ## Open questions requiring founder approval
 
-- Final visual identity details (Gate 2 input).
 - Analytics provider or none (Gate 5).
 - Payment provider and payment/account ownership (after first release).
-- Legal text and jurisdiction-specific requirements.
+- Final legal text and jurisdiction-specific requirements.
+- Any founder biography, credentials, or imagery beyond facts already approved.
 - Public launch timing and approval.
