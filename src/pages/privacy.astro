@@ -41,20 +41,32 @@ import { contact, site } from '../lib/site';
         viewing a page does not send a request to a font provider.
       </p>
       <p>
-        The enquiry form is not accepting submissions yet. When it is, it will collect
-        only the fields shown on the contact page: your name, email address, service of
-        interest, message, and optionally a phone number and business name.
+        The enquiry form collects only the fields shown on the contact page: your name,
+        email address, service of interest, message, and optionally a phone number and
+        business name. It is checked by Cloudflare Turnstile, a spam-protection service:
+        to submit the form, your browser runs Cloudflare's Turnstile script, which may
+        set functional cookies or local storage and processes technical information
+        (such as your IP address and browser characteristics) to distinguish people from
+        automated scripts. Cloudflare handles that information under its own
+        <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener noreferrer">
+          privacy policy
+        </a>
+        .
       </p>
 
       <h2>What happens to an enquiry</h2>
       <p>
-        Enquiries sent by email or WhatsApp arrive in the founder's inbox or WhatsApp
-        account and are used only to answer you and, if you engage us, to carry out the
-        work. There is no customer database, CRM, or mailing list behind this site.
+        A form submission is emailed to the founder's inbox ({contact.email}) through
+        Resend, our email delivery provider, and exists only there — the site itself
+        stores nothing, and there is no customer database, CRM, or mailing list behind
+        it. Enquiries sent by email or WhatsApp arrive in the founder's inbox or
+        WhatsApp account. All enquiries are used only to answer you and, if you engage
+        us, to carry out the work.
       </p>
       <p>
-        Email and WhatsApp are operated by their own providers under their own terms;
-        messages you send through them are handled by those providers as well as by us.
+        Resend, email providers, and WhatsApp are operated by their own providers under
+        their own terms; messages you send through them are handled by those providers
+        as well as by us.
       </p>
 
       <h2>Keeping and deleting information</h2>
@@ -67,9 +79,9 @@ import { contact, site } from '../lib/site';
 
       <h2>Hosting and security measures</h2>
       <p>
-        The site is served over HTTPS. Hosting arrangements and any spam-protection
-        service used by the future enquiry form will be named here once they are in
-        place.
+        The site is served over HTTPS. It is built to run on Cloudflare, which also
+        provides the Turnstile spam check described above. When the site is deployed,
+        the final hosting arrangement will be confirmed here.
       </p>
 
       <h2>Questions</h2>

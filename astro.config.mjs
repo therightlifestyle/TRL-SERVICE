@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import cloudflare from '@astrojs/cloudflare';
 
 // The canonical production origin. Overridden per environment with PUBLIC_SITE_URL.
 // No deployment exists yet (see docs/TRL_DEPLOYMENT.md); this value only shapes
@@ -9,7 +10,11 @@ const site = process.env.PUBLIC_SITE_URL ?? 'https://therightlifestyle.com';
 
 export default defineConfig({
   site,
+  // D-005: static output with exactly one server-rendered route. Every page is
+  // prerendered HTML except /contact/, which opts out with `prerender = false`
+  // so it can process the form POST server-side (Gate 4).
   output: 'static',
+  adapter: cloudflare(),
   trailingSlash: 'always',
   build: {
     format: 'directory',
@@ -19,9 +24,12 @@ export default defineConfig({
     sitemap({
       // Pages that carry a noindex directive are kept out of the sitemap so the
       // two signals cannot contradict each other. The legal pages are drafts
-      // pending review (docs/TRL_OPERATING_STATE.md open questions).
+      // pending review (docs/TRL_OPERATING_STATE.md open questions), and
+      // /contact/sent/ is a utility confirmation page, not content.
       filter: (page) =>
-        !['/404', '/privacy/', '/terms/'].some((excluded) => page.includes(excluded)),
+        !['/404', '/privacy/', '/terms/', '/contact/sent/'].some((excluded) =>
+          page.includes(excluded),
+        ),
     }),
   ],
   devToolbar: {

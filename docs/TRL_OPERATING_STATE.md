@@ -1,6 +1,6 @@
 # TRL — Operating State
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-17 (Gate 4 complete)._
 
 ## Current phase
 
@@ -8,15 +8,15 @@ _Last updated: 2026-09-17_
 
 ## Current gate
 
-**Gate 4 — Business Flow** is the active gate for the next session. Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), and Gate 3 (Core Website) are complete.
+**Gate 5 — Production Hardening** is the active gate for the next session. Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete.
 
 ## Status
 
-- Architecture: recorded and founder-approved in `TRL_ARCHITECTURE.md` — Astro with TypeScript, Cloudflare Pages, email-only inquiry delivery, full core site scope.
-- User journeys and first-release scope: recorded in `TRL_USER_JOURNEYS.md`.
+- Architecture: recorded and founder-approved in `TRL_ARCHITECTURE.md` — Astro with TypeScript, Cloudflare, email-only inquiry delivery, full core site scope. Gate 4 refined the platform shape to Cloudflare Workers with static assets (D-014, recorded for founder review).
+- User journeys and first-release scope: recorded in `TRL_USER_JOURNEYS.md`, now including the qualification-to-repeat founder workflow.
 - Design system: recorded in `TRL_DESIGN_SYSTEM.md`; founder-confirmed direction is quiet authority, light-first, a text-only wordmark, and abstract systems graphics.
-- Website: **implemented as a static build.** Astro 7.3.3 with TypeScript, a committed lockfile, the design token layer, accessible layout primitives and components, and all nine routes (Home, Services, AI Solutions, Offers, About, Contact, Privacy, Terms, 404) with truthful content, per-page metadata, canonical URLs, JSON-LD, robots.txt, and a sitemap.
-- Lead capture/contact workflow: **the form structure is rendered but deliberately disabled** — no server endpoint exists yet. Email and WhatsApp are the live channels and appear before the form on every relevant page. Implementing submission is Gate 4 work.
+- Website: implemented. Astro 7.3.3 with TypeScript, a committed lockfile, the design token layer, accessible layout primitives and components, and all routes with truthful content, per-page metadata, canonical URLs, JSON-LD, robots.txt, and a sitemap. Eight routes prerender; `/contact/` is the one server-rendered route.
+- Lead capture/contact workflow: **implemented.** The form POSTs to the server-rendered `/contact/` route with honeypot, Turnstile, server-side validation, fail-closed Resend delivery, accessible error states with preserved input, and a noindex confirmation page. Delivery with **real** credentials is unverified because no Resend or Turnstile account exists — that is a founder action at the deployment gate.
 - CI: GitHub Actions runs typecheck, build, unit/static-accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit on every pull request.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
 - Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
@@ -29,7 +29,19 @@ _Last updated: 2026-09-17_
 - Implement the founder-confirmed design direction and semantic tokens from `TRL_DESIGN_SYSTEM.md`; record intentional deviations.
 - Do not deploy publicly, create hosting/email accounts, or modify DNS without explicit founder authorization.
 - Add dependencies only as recorded in the architecture, and keep the committed lockfile reviewed.
-- Do not render a control that does not do what it says. The contact form stays disabled until its endpoint exists.
+- Do not render a control that does not do what it says. The contact form is live only where it is actually configured; an unconfigured deployment renders it disabled with a notice.
+
+## Gate 4 exit criteria — met, with two explicitly deferred items
+
+| Criterion | Status |
+| --- | --- |
+| Same-origin submissions with server-side validation, honeypot, and Turnstile checks | Met — Astro `checkOrigin` + honeypot + Turnstile siteverify, all unit- and e2e-tested |
+| Generic error handling, no internals leaked | Met — `400/403/405/415/422/503` states verified locally and in CI; log-hygiene unit test |
+| Form enabled with accessible per-field errors, error summary that takes focus, preserved input | Met — asserted by the browser suite in a real engine |
+| Announced success state | Met — PRG redirect to the static `/contact/sent/` page |
+| Email delivery works with real credentials outside CI | **Deferred — founder action.** No Resend account exists (accounts are founder-only). The delivery contract is unit-tested; the deployment-gate checklist includes sending one real enquiry end-to-end |
+| Provider free-tier sending restrictions recorded | Met — recorded in `TRL_ARCHITECTURE.md` from Resend's published documentation; live-account confirmation deferred with the item above |
+| Qualification-to-repeat workflow documented | Met — `TRL_USER_JOURNEYS.md` |
 
 ## Gate 3 exit criteria — met
 
@@ -44,14 +56,11 @@ _Last updated: 2026-09-17_
 | Typecheck, build, and unit checks pass | Met — `astro check` 0 errors; build 9 pages; 155 unit tests pass |
 | Applicable end-to-end checks | Met — the Playwright suite runs on CI across desktop and mobile projects. Its first run caught an undersized standalone link, which was fixed. Browser binaries cannot be downloaded in the authoring sandbox, so CI is the only place this suite executes. |
 
-## Gate 4 exit criteria
-
-The contact endpoint accepts same-origin submissions with server-side validation, honeypot and Turnstile checks, and generic error handling; the form is enabled with accessible per-field errors, an error summary that takes focus, preserved input, and an announced success state; email delivery to the approved address works with real credentials outside CI; provider free-tier sending restrictions are recorded in `TRL_ARCHITECTURE.md`; and the qualification-to-repeat workflow is documented.
-
 ## Open questions requiring founder approval
 
 - Analytics provider or none (Gate 5).
 - Payment provider and payment/account ownership (after first release).
-- Final legal text and jurisdiction-specific requirements. The Privacy and Terms pages are published as clearly labelled drafts and are `noindex` until reviewed.
+- Final legal text and jurisdiction-specific requirements. The Privacy and Terms pages are published as clearly labelled drafts and are `noindex` until reviewed; Gate 4 added truthful Turnstile and Resend disclosures to the privacy draft.
 - Any founder biography, credentials, or imagery beyond facts already approved.
 - Public launch timing and approval.
+- The D-014 platform refinement (Cloudflare Workers with static assets as the concrete form of the approved Cloudflare hosting direction).

@@ -64,16 +64,31 @@ Deliberately excluded from the first release:
 - **Steps:** qualify (fit, budget, timeline) → respond from official channels → scope → agree terms → deliver → request honest feedback; collect public proof only when it genuinely exists.
 - **The system must:** deliver a structured inquiry email (name, contact, optional phone/business, service of interest, message) that can be answered by replying directly.
 
-## Contact form specification (Phase 1)
+## Founder operations workflow — qualification to repeat (Gate 4)
 
-| Field | Required | Rules |
+This is the internal operating procedure the site's business flow is built around. It describes what the founder actually does with an enquiry; the site's job is to make steps 1–2 effortless and to never contradict the rest. It is an internal plan, not a public claim — nothing here is published as a promise unless the founder chooses to make it one.
+
+1. **Capture.** The enquiry arrives as a structured email (form submission, with reply-to set to the sender) or a WhatsApp message. The inbox is the system of record; nothing is retyped into a CRM because none exists (D-007).
+2. **Qualify — within one working session where possible.** Read for the three signals: fit (is it really a workflow/automation problem TRL can solve), budget (does the likely scope match an offer in the staircase, or is it a general conversation), and timeline (is there a real deadline). The Micro Audit exists precisely for cases where fit is uncertain.
+3. **Respond honestly.** Reply from the official address or WhatsApp number only. If it is not a fit, say so and, where useful, suggest what would actually help. No response-time promise exists on the site, so none is broken by taking the time a real answer needs.
+4. **Scope in writing.** Before any payment, send the scope: what will be done, the deliverables, the exclusions, and the price from the approved offer. The offers page is the reference; never quote an unapproved price (D-002).
+5. **Payment.** For now, payment details are sent manually after scope agreement (bank transfer / the founder's chosen method). No payment provider is integrated on purpose (D-008); offer CTAs remain payment-ready for when the founder authorizes one.
+6. **Deliver.** Execute the agreed scope with the defined correction window after handover. Build in tools the client owns or approves; hand over documentation.
+7. **Proof.** After delivery, ask for honest feedback. Publish testimonials, case studies, or outcomes only when they genuinely exist and the client agrees — the site currently and deliberately shows none.
+8. **Referral and repeat.** A satisfied client is the only marketing channel Phase 1 relies on. Ask directly whether they know someone with the same bottleneck, and propose the next step up the offer staircase (Micro Audit → Builder → Transformation) only when the client's actual situation calls for it.
+
+The enquiry email's subject line (`Website enquiry (service) from name`) and reply-to header are designed for step 2: triage from the inbox preview and answer with a normal reply.
+
+## Contact form specification (Phase 1 — implemented at Gate 4)
+
+| Field | Required | Rules (enforced server-side) |
 | --- | --- | --- |
-| Name | yes | sensible length limit |
-| Email | yes | valid email format; used as reply-to |
-| Service of interest | yes | select: Micro Audit, Builder Automation Setup, Transformation / Founder OS, General inquiry |
-| Message | yes | minimum and maximum length; plain text only |
-| WhatsApp / phone | no | optional contact alternative |
-| Business name | no | optional context |
-| Honeypot | hidden | must remain empty; submissions that fill it are rejected silently |
+| Name | yes | trimmed; 1–120 characters |
+| Email | yes | trimmed; valid format; ≤200 characters; used as the reply-to |
+| Service of interest | yes | one of the three approved offers or "General enquiry" |
+| Message | yes | trimmed; 20–4,000 characters; newlines allowed, other control characters rejected |
+| WhatsApp / phone | no | ≤40 characters; digits, spaces, and `+ ( ) - .` only |
+| Business name | no | trimmed; ≤120 characters |
+| Honeypot (`website`) | hidden | must remain empty; filled submissions are silently accepted-and-discarded |
 
-Server-side behavior (Turnstile verification, validation, length limits, generic errors, no storage, no PII in logs) is specified in `TRL_ARCHITECTURE.md` and `TRL_SECURITY.md`.
+Behaviour: the form POSTs same-origin to `/contact/`; Astro's `checkOrigin` rejects foreign origins; the server checks honeypot → Turnstile → validation → delivery in that order; failures render accessible errors with all input preserved; success redirects to `/contact/sent/`; nothing is stored; logs carry outcome events only. See `TRL_ARCHITECTURE.md` and `TRL_SECURITY.md` for the full contract.

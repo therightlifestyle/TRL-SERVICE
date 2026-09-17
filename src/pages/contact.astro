@@ -1,23 +1,80 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import ErrorSummary from '../components/ErrorSummary.astro';
 import Field from '../components/Field.astro';
 import Notice from '../components/Notice.astro';
 import PageIntro from '../components/PageIntro.astro';
-import { contact, mailtoLink, offers, whatsappLink } from '../lib/site';
+import { env as cfEnv } from 'cloudflare:workers';
+import { contact, mailtoLink, whatsappLink } from '../lib/site';
+import {
+  createContactDeps,
+  FIELD_ORDER,
+  handleContactPost,
+  SERVICE_OPTIONS,
+  type ContactFieldErrors,
+  type RawContactValues,
+} from '../lib/contact';
 
 /*
- * Gate 3 is the static site. The server endpoint that receives this form —
- * with Turnstile verification, server-side validation, and email delivery — is
- * Gate 4 work (docs/TRL_ARCHITECTURE.md). Until that endpoint exists the form
- * is rendered in an explicitly disabled state with a status notice, so no
- * control is presented as working when it does not. Email and WhatsApp are the
- * live channels today and are shown before the form, never behind it.
+ * Gate 4: this page is the contact endpoint (D-005 — the one server route).
+ * It prerenders nothing; GET renders the form and POST processes the
+ * submission. Same-origin enforcement is provided by Astro's built-in
+ * `checkOrigin`, which rejects form POSTs with a missing or foreign Origin
+ * before this component runs. All submission logic lives in src/lib/contact.ts.
  */
-const serviceOptions = [
-  { value: '', label: 'Choose one' },
-  ...offers.map((offer) => ({ value: offer.id, label: offer.name })),
-  { value: 'general', label: 'General enquiry' },
-];
+
+const method = Astro.request.method;
+const sitekey = (cfEnv.PUBLIC_TURNSTILE_SITEKEY ?? '').trim();
+
+interface FormState {
+  status: number;
+  values: RawContactValues;
+  fieldErrors: ContactFieldErrors;
+  formError?: 'verification' | 'unavailable';
+}
+
+let formState: FormState = {
+  status: 200,
+  values: { name: '', email: '', service: '', message: '', phone: '', business: '' },
+  fieldErrors: {},
+};
+
+if (method === 'POST') {
+  const result = await handleContactPost(Astro.request, { ...cfEnv }, createContactDeps());
+  if (result.outcome === 'redirect') {
+    return Astro.redirect(result.location, 303);
+  }
+  formState = {
+    status: result.status,
+    values: { ...formState.values, ...result.values },
+    fieldErrors: result.fieldErrors ?? {},
+    formError: result.formError,
+  };
+} else if (method !== 'GET' && method !== 'HEAD') {
+  return new Response(null, { status: 405, headers: { Allow: 'GET, POST' } });
+}
+
+Astro.response.status = formState.status;
+
+const { values, fieldErrors, formError } = formState;
+
+/* Error summary entries follow the visual order of the form. */
+const summaryErrors = FIELD_ORDER.filter((field) => fieldErrors[field]).map((field) => ({
+  href: `#${field}`,
+  text: fieldErrors[field]!,
+}));
+
+if (formError === 'verification') {
+  summaryErrors.push({
+    href: '#turnstile',
+    text: 'We could not verify that your message comes from a person. Please try again.',
+  });
+}
+
+const configured = sitekey !== '';
 ---
 
 <BaseLayout
@@ -72,25 +129,52 @@ const serviceOptions = [
       <div class="stack">
         <h2 id="form-heading">Enquiry form</h2>
         <p class="muted">
-          The form below is the enquiry structure we will use. Its submission handling
-          is not built yet, so the fields are disabled and it cannot be sent — please
-          use WhatsApp or email above in the meantime.
+          Or send the form below. Every field marked <strong>Required</strong> must be
+          filled in; the rest help us answer faster.
         </p>
       </div>
 
-      <Notice tone="warning" heading="This form is not accepting submissions yet">
-        <p>
-          Sending is handled by a server step that is still being built. Nothing you
-          type here would reach us, so the fields are switched off deliberately rather
-          than left looking functional.
-        </p>
-      </Notice>
+      {
+        !configured && (
+          <Notice tone="warning" heading="The form is not available on this deployment">
+            <p>
+              This copy of the site is missing its verification configuration, so the
+              form cannot accept submissions. Please use WhatsApp or email above —
+              both reach the founder directly.
+            </p>
+          </Notice>
+        )
+      }
 
-      <form class="form" novalidate>
-        <fieldset class="form__fieldset" disabled>
+      {
+        formError === 'unavailable' && (
+          <Notice tone="error" heading="Your message was not sent">
+            <p>
+              Something went wrong on our side, and we could not send it. Your text is
+              still in the form below — try again in a moment, or send it by{' '}
+              <a href={whatsappLink('Hello TRL, I would like to discuss a workflow in my business: ')}>WhatsApp</a>{' '}
+              or <a href={mailtoLink('Enquiry via the TRL website')}>email</a> instead.
+            </p>
+          </Notice>
+        )
+      }
+
+      {summaryErrors.length > 0 && <ErrorSummary errors={summaryErrors} />}
+
+      <form class="form" method="post" action="/contact/" novalidate>
+        <fieldset class="form__fieldset" disabled={!configured}>
           <legend class="visually-hidden">Enquiry details</legend>
 
-          <Field id="name" name="name" label="Your name" required maxlength={120} autocomplete="name" />
+          <Field
+            id="name"
+            name="name"
+            label="Your name"
+            required
+            maxlength={120}
+            autocomplete="name"
+            value={values.name}
+            error={fieldErrors.name}
+          />
 
           <Field
             id="email"
@@ -101,6 +185,8 @@ const serviceOptions = [
             maxlength={200}
             autocomplete="email"
             hint="We reply to this address."
+            value={values.email}
+            error={fieldErrors.email}
           />
 
           <Field
@@ -109,7 +195,9 @@ const serviceOptions = [
             label="Service of interest"
             type="select"
             required
-            options={serviceOptions}
+            options={SERVICE_OPTIONS}
+            value={values.service}
+            error={fieldErrors.service}
           />
 
           <Field
@@ -121,6 +209,8 @@ const serviceOptions = [
             minlength={20}
             maxlength={4000}
             hint="Describe the workflow, how often it runs, and what it currently costs you."
+            value={values.message}
+            error={fieldErrors.message}
           />
 
           <Field
@@ -130,6 +220,8 @@ const serviceOptions = [
             type="tel"
             maxlength={40}
             autocomplete="tel"
+            value={values.phone}
+            error={fieldErrors.phone}
           />
 
           <Field
@@ -138,16 +230,71 @@ const serviceOptions = [
             label="Business name"
             maxlength={120}
             autocomplete="organization"
+            value={values.business}
+            error={fieldErrors.business}
           />
 
+          {
+            /* Hidden anti-spam field: humans never see it and never fill it in. */
+            <div class="honeypot" aria-hidden="true">
+              <label for="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
+          }
+
+          {
+            configured && (
+              <div class="form__turnstile" id="turnstile" tabindex="-1">
+                <div
+                  class="cf-turnstile"
+                  data-sitekey={sitekey}
+                  data-theme="light"
+                  data-size="compact"
+                />
+              </div>
+            )
+          }
+
           <p class="text-small muted">
-            We use what you send only to answer your enquiry. See the
+            We use what you send only to answer your enquiry. The form is checked by
+            Cloudflare Turnstile to keep out automated spam. See the
             <a href="/privacy/">privacy page</a>.
           </p>
+
+          <Button type="submit" fullWidthOnMobile>Send enquiry</Button>
         </fieldset>
       </form>
     </div>
   </section>
+
+  {
+    configured && (
+      <script
+        is:inline
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        async defer
+      />
+    )
+  }
+
+  <noscript>
+    <section class="section" aria-labelledby="noscript-heading">
+      <div class="container container--reading">
+        <h2 id="noscript-heading">Sending the form needs JavaScript</h2>
+        <p>
+          The form's spam check runs in your browser, so it cannot be submitted
+          without JavaScript. WhatsApp and email at the top of this page work
+          without it and reach the same person.
+        </p>
+      </div>
+    </section>
+  </noscript>
 </BaseLayout>
 
 <style>
@@ -191,8 +338,29 @@ const serviceOptions = [
     border: 0;
   }
 
-  /* Disabled state is visibly and semantically inert, never mistakable for live. */
+  /* Unconfigured deployments render the form inert, never mistakable for live. */
   .form__fieldset[disabled] {
     opacity: 0.75;
+  }
+
+  .form__turnstile {
+    display: flex;
+    min-height: var(--control-height);
+    align-items: flex-start;
+  }
+
+  .form__turnstile:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* The honeypot is removed from view and from assistive technology, but stays
+     in the markup so naive bots fill it in. Never apply display:none here. */
+  .honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
   }
 </style>

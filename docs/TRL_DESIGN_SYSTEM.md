@@ -243,6 +243,8 @@ Email and WhatsApp are visible as plain, recognizable actions. The persistent Wh
 - Success and system-error messages are concise, receive appropriate live-region behavior, and never expose internal details.
 - Loading controls preserve their label context, prevent duplicate submission, and do not rely on an indefinite spinner.
 
+**Implemented at Gate 4** on `/contact/`: the error summary takes focus via `autofocus` on a `tabindex="-1"` container (asserted by the browser suite in a real engine), links to each invalid field, and per-field errors render through the `Field` primitive with `aria-invalid` and `aria-describedby` associations. All submitted values are preserved on every failure render. The success state is a full page (`/contact/sent/`) rather than a live-region swap, because the form is a plain server-rendered POST with no client script (D-010) — a page load announces itself. The Turnstile widget sits inside the fieldset so an unconfigured deployment disables it with the rest of the form; its script is the sanctioned third-party exception (D-015), and the widget uses the light theme and the compact size — the content column is 280px at the 320px reflow floor, and every other Turnstile size has a 300px minimum.
+
 ### Notices
 
 Information, success, warning, and error notices use a short heading where needed and plain language. Do not use toast-only feedback for form outcomes or other important state.

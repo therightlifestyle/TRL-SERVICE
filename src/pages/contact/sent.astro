@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/Button.astro';
+import Notice from '../../components/Notice.astro';
+import PageIntro from '../../components/PageIntro.astro';
+import { mailtoLink, whatsappLink } from '../../lib/site';
+
+/*
+ * Post-submission confirmation (PRG target for a successful or honeypot-trapped
+ * POST). Static and `noindex`: it is a utility confirmation, not content, and
+ * anyone can land here without submitting anything, so it asserts no specifics
+ * beyond "if you just sent the form, it worked".
+ */
+---
+<BaseLayout
+  title="Enquiry sent"
+  description="Confirmation that an enquiry submitted through the TRL contact form was received."
+  noindex={true}
+  whatsappMessage="Hello TRL, I have just sent an enquiry through your website: "
+>
+  <PageIntro
+    eyebrow="Contact"
+    heading="Your enquiry was sent."
+    lead="Thank you. If you submitted the form just now, it reached the founder's inbox."
+  />
+
+  <section class="section" aria-labelledby="sent-heading">
+    <div class="container container--reading stack-8">
+      <Notice tone="success" heading="Received">
+        <p>
+          We will reply to the email address you gave on the form. If it does not
+          arrive within a few days, check your spam folder or message us on{' '}
+          <a href={whatsappLink('Hello TRL, I have just sent an enquiry through your website: ')}>
+            WhatsApp
+          </a>
+          .
+        </p>
+      </Notice>
+
+      <div class="stack">
+        <h2 id="sent-heading">While you wait</h2>
+        <p>
+          If you want to prepare for the conversation, the offers page lists what
+          each engagement includes and excludes, at the approved prices.
+        </p>
+        <div class="sent__actions">
+          <Button href="/offers/" variant="secondary">Compare the offers</Button>
+          <Button href={mailtoLink('Enquiry via the TRL website')} variant="secondary">
+            Email instead
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .sent__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block-start: var(--space-6);
+  }
+</style>

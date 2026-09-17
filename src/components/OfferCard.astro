@@ -10,10 +10,10 @@ interface Props {
 const { offer, headingLevel = 3 } = Astro.props;
 const Heading = `h${headingLevel}` as 'h2' | 'h3';
 /*
- * Gate 3 has no server endpoint yet (the inquiry form is Gate 4 work), so the
- * offer actions use the two channels that genuinely work today: a WhatsApp deep
- * link naming the offer (journey J3) and an email with the offer in the subject.
- * No control is rendered that does not do what it says.
+ * Offer actions use the two channels that work everywhere without a provider
+ * integration: a WhatsApp deep link naming the offer (journey J3) and an email
+ * with the offer in the subject. The enquiry form (Gate 4) is a third path on
+ * /contact/; no control is rendered that does not do what it says.
  */
 const whatsappHref = whatsappLink(
   `Hello TRL, I am interested in the ${offer.name} (${offer.price}). Here is what I need help with: `,

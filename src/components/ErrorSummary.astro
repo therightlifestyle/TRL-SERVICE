@@ -1,0 +1,78 @@
+---
+/**
+ * Error summary for a failed form submission (design system: "On failed
+ * submission, place focus on an error summary that links to invalid fields").
+ *
+ * The page renders this above the form after a POST that failed validation or
+ * verification. `autofocus` moves keyboard focus and the screen-reader cursor
+ * to the summary on page load; every entry links to the control to fix. The
+ * e2e suite asserts that focus actually lands here in a real browser.
+ */
+interface Props {
+  errors: readonly { href: string; text: string }[];
+}
+
+const { errors } = Astro.props;
+const summaryId = 'error-summary';
+---
+
+{
+  errors.length > 0 && (
+    <div class="error-summary" id={summaryId} tabindex="-1" {...{ autofocus: true }} aria-labelledby={`${summaryId}-title`}>
+      <h2 class="error-summary__title" id={`${summaryId}-title`}>
+        There is a problem
+      </h2>
+      <ul class="error-summary__list">
+        {errors.map((error) => (
+          <li>
+            <a href={error.href}>{error.text}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+<style>
+  .error-summary {
+    padding: var(--space-4) var(--space-6);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-danger);
+    border-inline-start-width: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .error-summary:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  .error-summary__title {
+    margin-block: 0 var(--space-2);
+    font-size: var(--text-h3);
+    line-height: 1.25;
+  }
+
+  .error-summary__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .error-summary__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    font-weight: 600;
+    color: var(--color-danger);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .error-summary__list a:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+</style>

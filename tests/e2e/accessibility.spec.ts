@@ -8,6 +8,7 @@ const routes = [
   '/offers/',
   '/about/',
   '/contact/',
+  '/contact/sent/',
   '/privacy/',
   '/terms/',
 ];
