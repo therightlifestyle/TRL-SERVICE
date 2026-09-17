@@ -6,23 +6,24 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Sequence by gate
 
-### Gate 0 — Repository Reset
+### Gate 0 — Repository Reset — complete (2026-09-17)
 
 - Establish project memory and source-of-truth hierarchy.
 - Record baseline, constraints, decisions, and handoff process.
 - Confirm no existing implementation or tests are being discarded.
 
-### Gate 1 — Architecture
+### Gate 1 — Architecture — complete (2026-09-17)
 
-- Confirm user journeys and release scope.
-- Propose and record the smallest suitable technical stack.
-- Define page/content boundaries, contact flow, data handling, environments, and test strategy.
-- Obtain founder input only for strategic/provider/ownership decisions.
+- Confirm user journeys and release scope. — Recorded in `TRL_USER_JOURNEYS.md`; scope founder-approved (D-008).
+- Propose and record the smallest suitable technical stack. — Astro with TypeScript, founder-approved (D-005).
+- Define page/content boundaries, contact flow, data handling, environments, and test strategy. — Recorded in `TRL_ARCHITECTURE.md`.
+- Obtain founder input only for strategic/provider/ownership decisions. — Stack, hosting, contact delivery, and scope approved in session (D-005–D-008).
 
-### Gate 2 — Design System
+### Gate 2 — Design System — next
 
 - Define typography, colors, spacing, layout, components, focus states, responsive rules, and reduced-motion behavior.
 - Validate the design direction against premium, minimal, precise, trustworthy TRL positioning.
+- Confirm the visual direction with the founder.
 
 ### Gate 3 — Core Website
 
@@ -54,4 +55,4 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-Review this repository memory, define Gate 1 requirements and architecture options, then record the selected implementation approach before writing application code.
+Begin Gate 2 — Design System: propose the design direction (typography, color, spacing, components, states, reduced motion), validate it against the premium, minimal, precise, trustworthy positioning, and confirm it with the founder. Gate 3 then scaffolds the Astro project with CI and the base layout before the core pages are built.

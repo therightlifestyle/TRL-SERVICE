@@ -8,34 +8,33 @@ _Last updated: 2026-09-17_
 
 ## Current gate
 
-**Gate 0 — Repository Reset.** The repository has been inspected and is being given a durable source of truth. Gate 1 has not yet been formally started because the technical stack and application requirements are not yet recorded as approved decisions.
+**Gate 2 — Design System** is the active gate for the next session. Gate 0 (Repository Reset) and Gate 1 (Architecture) are complete.
 
 ## Status
 
-- Repository baseline: clean initial commit; no implementation exists.
-- Documentation foundation: being established in this change.
+- Architecture: recorded and founder-approved in `TRL_ARCHITECTURE.md` — Astro with TypeScript, Cloudflare Pages, email-only inquiry delivery, full core site scope.
+- User journeys and first-release scope: recorded in `TRL_USER_JOURNEYS.md`.
 - Website: not started.
-- Lead capture/contact workflow: not started.
-- Payment integration: not started; architecture must remain payment-ready without selecting a provider.
-- Deployment: not started.
+- Lead capture/contact workflow: designed, not implemented.
+- Payment integration: not started; offer presentation is payment-ready without a provider.
+- Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
 - Production launch: not authorized.
 
 ## Active constraints
 
 - Do not build the entire long-term TRL ecosystem in Phase 1.
 - Do not invent pricing, claims, credentials, or infrastructure ownership decisions.
-- Do not deploy publicly or modify DNS without explicit founder authorization.
-- Do not add dependencies until the implementation need is known.
+- Do not deploy publicly, create hosting/email accounts, or modify DNS without explicit founder authorization.
+- Add dependencies only as recorded in the architecture, with a lockfile review at the Gate 3 scaffold.
 
-## Gate exit criteria
+## Gate 2 exit criteria
 
-Gate 0 is complete when the repository has understandable project memory, a current execution plan, a documented architecture decision process, a security/deployment baseline, and a session handoff. The next execution session should review this documentation and begin Gate 1 with a concrete stack and application architecture proposal.
+Typography, colors, spacing, layout, components, focus states, responsive rules, and reduced-motion behavior are defined and documented; the direction is validated against the premium, minimal, precise, trustworthy positioning; and the founder confirms the visual direction.
 
-## Open questions requiring future founder approval
+## Open questions requiring founder approval
 
-- Final visual identity details beyond the approved direction.
-- Hosting/provider and deployment environment.
-- Contact submission destination and CRM/email workflow.
-- Payment provider and payment/account ownership.
+- Final visual identity details (Gate 2 input).
+- Analytics provider or none (Gate 5).
+- Payment provider and payment/account ownership (after first release).
 - Legal text and jurisdiction-specific requirements.
 - Public launch timing and approval.
