@@ -1,6 +1,6 @@
 # TRL — Architecture
 
-_Last updated: 2026-09-17 (Gate 5 in progress). The stack below is founder-approved and recorded in `TRL_DECISIONS.md` (D-005–D-008). The static site and the contact endpoint are implemented and covered by CI; security headers and the CSP are implemented at Gate 5 (D-018) and platform rate limiting is planned. Nothing has been purchased or deployed._
+_Last updated: 2026-09-17 (Gate 5 complete; Gate 6 — Deployment Readiness active). The stack below is founder-approved and recorded in `TRL_DECISIONS.md` (D-005–D-008). The static site and the contact endpoint are implemented and covered by CI; Gate 5 added the security headers and CSP (D-018), the contact-endpoint rate limiter, the cache policy (D-020), and the dependency, performance/SEO, and observability reviews (`TRL_GATE5_REVIEW.md`). Nothing has been purchased or deployed._
 
 ## Phase 1 architecture goals
 
@@ -65,7 +65,9 @@ SEO approach: per-page titles and descriptions, semantic HTML, generated sitemap
 astro.config.mjs        Site origin, static output with the Cloudflare adapter,
                         trailing slashes, sitemap filter (noindex exclusions)
 wrangler.jsonc          Anchors local dev config; the adapter generates the real
-                        deploy config into dist/client/wrangler.json at build
+                        deploy config into dist/server/wrangler.json at build
+                        (observability passes through; the rate-limit binding
+                        is declared here, commented out, pending the account)
 package.json            Pinned dependencies and the dev/build/typecheck/test scripts
 package-lock.json       Committed and reviewed; npm ci in CI
 .env.example            Committed names/comments for build-time variables
@@ -177,7 +179,7 @@ Division of labour between the suites: anything that depends on painted pixels o
 
 ## Remaining architecture-adjacent decisions
 
-- Analytics provider or none — Gate 5, founder decision (revisited; still open).
+- Analytics provider or none — **resolved at Gate 5: none in Phase 1 (D-019)**, on the founder's decision; revisit at Gate 7 or when Phase 2 begins. Cloudflare Web Analytics was considered and declined because it still injects a third-party script.
 - Payment provider and account ownership — after first release, when the founder authorizes; offer CTAs are payment-ready.
 - Legal text — founder decision before launch.
 - Rate-limit `namespace_id` and the Cloudflare account that provisions it — founder action at the deployment gate (`TRL_RATE_LIMITING.md`).

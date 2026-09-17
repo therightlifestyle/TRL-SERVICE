@@ -43,14 +43,17 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 - Updated the privacy draft to disclose Turnstile and Resend processing truthfully.
 - Remaining for the deployment gate: real-credential delivery verification (no Resend or Turnstile account exists yet — founder action), platform rate limiting, and the production Turnstile keys.
 
-### Gate 5 — Production Hardening (in progress, 2026-09-17)
+### Gate 5 — Production Hardening — complete (2026-09-17)
 
 - Security headers and CSP: **implemented (D-018).** `src/lib/security.ts` is the single source; `public/_headers` applies the common headers + the static-pages CSP (`script-src 'none'`) to static-asset responses, and `src/middleware.ts` applies the contact CSP with the sanctioned Turnstile exception (`challenges.cloudflare.com` in `script-src`/`frame-src`) to Worker-rendered `/contact/`. Unit-pinned and e2e-asserted.
-- Abuse prevention: Turnstile, honeypot, and origin checks were in place at Gate 4. The platform rate-limit plan for `POST /contact/` is **planned** in `TRL_RATE_LIMITING.md` (binding, key, limit, order, and user-facing behaviour fixed; account-scoped `namespace_id` is a founder action at the deployment gate).
-- Accessibility: the manual keyboard/zoom/screen-reader pass is **scheduled** in `TRL_MANUAL_ACCESSIBILITY_PASS.md`, including the real-Turnstile-widget eyeball checks D-017 took out of automation.
-- Remaining in this gate: dependency re-review, performance/SEO (Lighthouse at Gates 5 and 7), monitoring/observability review, and the analytics founder decision.
+- Abuse prevention: Turnstile, honeypot, and origin checks were in place at Gate 4; the platform rate limiter is now **implemented, not just planned** — `handleContactPost` takes an optional `checkRateLimit`, `createRateLimitCheck` wraps the Workers binding in the fail-open contract, over-limit answers `429` with the same generic input-preserving state as `503`, and `wrangler.jsonc` carries the `ratelimits` block commented out pending the founder's account-scoped `namespace_id` (`TRL_RATE_LIMITING.md`).
+- Accessibility: the manual keyboard/zoom/screen-reader pass remains **scheduled** in `TRL_MANUAL_ACCESSIBILITY_PASS.md`, including the real-Turnstile-widget checks D-017 took out of automation. It is a human step and is not counted as performed.
+- Dependency re-review: 0 advisories, 3 exact-pinned production dependencies, every installed package declaring a licence, and no copyleft code in either shipped artifact — recorded in `TRL_GATE5_REVIEW.md`.
+- Performance/SEO: measured from the real build output rather than scored (Lighthouse needs a browser and a deployed origin, so the synthetic run belongs to Gate 7). Two defects found and fixed — the display font was not preloaded, and fonts had no cache policy — and the byte budgets are now pinned by `tests/unit/build-budget.test.ts` (D-020). SEO signals re-verified end to end.
+- Observability: `observability` verified through to the generated deploy config; the PII-free log contract and its gaps documented, with Cloudflare's plan limits recorded (`TRL_GATE5_REVIEW.md`).
+- Analytics: **founder decision — none in Phase 1 (D-019).**
 
-### Gate 6 — Deployment Readiness
+### Gate 6 — Deployment Readiness (active)
 
 - Document environment variables, hosting setup, domain readiness, backups, rollback, recovery, and controlled deployment.
 
@@ -64,4 +67,6 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-Continue Gate 5 — Production Hardening from the three deliverables landed in this session (security headers/CSP implemented, rate-limit plan fixed, manual accessibility pass scheduled). Next: re-run the dependency audit and observe this branch's CI (typecheck → build → 220 unit tests → e2e including the new header assertions); then the remaining Gate 5 reviews — performance/SEO, monitoring/observability — and the open analytics founder decision. Real-credential delivery verification, production Turnstile keys, the rate-limit `namespace_id`, and framing/HSTS platform rules remain founder actions attached to the deployment gate.
+**Gate 6 — Deployment Readiness.** Gate 5 is complete, so the next work is documentation and readiness rather than more hardening: environment variables and platform setup, domain readiness, backup/rollback/recovery, preview verification, and the controlled-deployment procedure — all of which is founder-authorized work, with no account, DNS change, or deployment until the founder authorizes it. `TRL_DEPLOYMENT.md` already carries the deployment-gate checklist and direction; Gate 6 turns the parts of it still marked "planned" into procedure.
+
+**Nothing is deployed, and no credentials exist yet.** Every remaining item that needs a real account is a founder action attached to the deployment gate: real-credential delivery verification, production Turnstile keys, the rate-limit `namespace_id` plus its burst check, framing/HSTS platform rules, disabling GitHub Pages, and the optional `og:image`. The manual accessibility pass also needs a human with a browser. None of these can be closed from inside the repository, and none of them should be faked.

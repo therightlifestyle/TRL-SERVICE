@@ -1,6 +1,6 @@
 # TRL — Operating State
 
-_Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implemented; rate limiting planned; manual accessibility pass scheduled)._
+_Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 6, Deployment Readiness.)_
 
 ## Current phase
 
@@ -8,7 +8,7 @@ _Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implement
 
 ## Current gate
 
-**Gate 5 — Production Hardening** is the active gate, three deliverables in: security headers + CSP are implemented (D-018), the rate-limit plan for `POST /contact/` is fixed in `TRL_RATE_LIMITING.md`, and the manual accessibility pass is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md`. Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete.
+**Gate 5 — Production Hardening is complete.** Security headers and CSP (D-018), the contact-endpoint rate limiter, the dependency re-review, the performance/SEO audit, the monitoring/observability review, and the founder's analytics decision (D-019 — Phase 1 ships with none) are all done; the four reviews are recorded in `TRL_GATE5_REVIEW.md`, and the manual accessibility pass remains scheduled for a human with a browser (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete. **Gate 6 — Deployment Readiness is the active gate.**
 
 ## Status
 
@@ -18,7 +18,7 @@ _Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implement
 - Website: implemented. Astro 7.3.3 with TypeScript, a committed lockfile, the design token layer, accessible layout primitives and components, and all routes with truthful content, per-page metadata, canonical URLs, JSON-LD, robots.txt, and a sitemap. Eight routes prerender; `/contact/` is the one server-rendered route.
 - Lead capture/contact workflow: **implemented.** The form POSTs to the server-rendered `/contact/` route with honeypot, Turnstile, server-side validation, fail-closed Resend delivery, accessible error states with preserved input, and a noindex confirmation page. Delivery with **real** credentials is unverified because no Resend or Turnstile account exists — that is a founder action at the deployment gate.
 - CI: GitHub Actions runs typecheck, build, unit/static-accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit on every pull request.
-- Production hardening (Gate 5, in progress): security headers and CSP are implemented as a dual-write (D-018) — `public/_headers` for static responses (`script-src 'none'`) and `src/middleware.ts` for the Worker-rendered `/contact/` (the static CSP plus the `challenges.cloudflare.com` Turnstile exception). The rate-limit plan for `POST /contact/` is fixed in `TRL_RATE_LIMITING.md` (binding, key, limit, order, and user-facing behaviour), awaiting the founder's account-scoped `namespace_id`. The manual accessibility pass, now including the real Turnstile widget's rendering/size (D-017), is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md`.
+- Production hardening (Gate 5): **complete.** Security headers and CSP are implemented as a dual-write (D-018) — `public/_headers` for static responses (`script-src 'none'`) and `src/middleware.ts` for the Worker-rendered `/contact/` (the static CSP plus the `challenges.cloudflare.com` Turnstile exception). Rate limiting for `POST /contact/` is **implemented**, not just planned: the endpoint reads `env.CONTACT_RATE_LIMITER`, answers `429` with the same generic preserved-input state as `503`, and fails open by contract when the binding is absent — the `ratelimits` block in `wrangler.jsonc` stays commented out pending the founder's account-scoped `namespace_id`. The performance/SEO audit found and fixed two defects (the unpreloaded display font, and fonts with no cache policy) and pinned the measured budgets in `tests/unit/build-budget.test.ts`; the dependency re-review found no advisories and verified no copyleft code in either shipped artifact; the observability review verified that Workers Logs are enabled in the generated deploy config and documented the log contract and its gaps. Analytics: **none in Phase 1** (D-019). All four reviews are in `TRL_GATE5_REVIEW.md`. The manual accessibility pass, including the real Turnstile widget's rendering/size (D-017), is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md` and is a human step.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
 - Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
 - Production launch: not authorized.
@@ -59,9 +59,11 @@ _Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implement
 
 ## Open questions requiring founder approval
 
-- Analytics provider or none (Gate 5, still open).
+- Analytics provider or none — **resolved at Gate 5: none in Phase 1 (D-019).** Revisit at Gate 7 or when Phase 2 begins.
 - The rate-limit binding's `namespace_id` (account-scoped integer) and the Cloudflare account that provisions it — deployment gate (`TRL_RATE_LIMITING.md`).
 - Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — deployment gate (D-018 note).
+- GitHub Pages is still enabled with the legacy Jekyll builder sourced from `main`; the founder should disable it or switch its source to "GitHub Actions" in Settings → Pages (the repository token gets `403`). `_config.yml` contains it until then (`TRL_DEPLOYMENT.md`).
+- Optional, if wanted before launch: a founder-approved image for `og:image`, currently absent because no imagery is approved (`TRL_GATE5_REVIEW.md`).
 - Payment provider and payment/account ownership (after first release).
 - Final legal text and jurisdiction-specific requirements. The Privacy and Terms pages are published as clearly labelled drafts and are `noindex` until reviewed; Gate 4 added truthful Turnstile and Resend disclosures to the privacy draft.
 - Any founder biography, credentials, or imagery beyond facts already approved.

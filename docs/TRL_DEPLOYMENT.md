@@ -1,12 +1,12 @@
 # TRL — Deployment
 
-_Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implemented; rate limiting planned)._
+_Last updated: 2026-09-17 (Gate 5 complete — the deployment checklist now includes the cache-policy and observability checks; analytics decided as none in Phase 1)._
 
 ## Current status
 
 No hosting account, domain change, DNS record, email-provider account, payment account, or production deployment has been configured. Nothing has been purchased or created. In particular, **no Turnstile or Resend account exists**, so the site's production keys are not yet obtainable; the endpoint is built, tested against Cloudflare's published dummy keys, and ready for real configuration.
 
-The application now produces a deployable artifact: `npm run build` emits the static site to `dist/client/` (8 prerendered routes plus `robots.txt`, the sitemap, the favicon, and the self-hosted fonts) and the Workers server entry to `dist/server/`, with the adapter-generated deploy config at `dist/client/wrangler.json`. It has never been uploaded anywhere. `PUBLIC_SITE_URL` overrides the canonical origin at build time; it defaults to `https://therightlifestyle.com`.
+The application now produces a deployable artifact: `npm run build` emits the static site to `dist/client/` (8 prerendered routes plus `robots.txt`, the sitemap, the favicon, and the self-hosted fonts) and the Workers server entry to `dist/server/`, with the adapter-generated deploy config at **`dist/server/wrangler.json`** (verified: it inherits the repository-root `wrangler.jsonc`, carries `observability` through, and currently reads `"ratelimits":[]` where the founder's binding will land). `.assetsignore` keeps that config and `.dev.vars` out of the served assets. It has never been uploaded anywhere. `PUBLIC_SITE_URL` overrides the canonical origin at build time; it defaults to `https://therightlifestyle.com`.
 
 ## Selected direction (founder-approved 2026-09-17, D-006; platform shape refined at Gate 4, D-014)
 
@@ -26,12 +26,15 @@ The application now produces a deployable artifact: `npm run build` emits the st
 - [ ] Provision the rate limiter: **uncomment the `ratelimits` block already present in `wrangler.jsonc`**, set the founder-chosen `namespace_id`, and deploy — the enforcing code is committed and picks the binding up automatically. Then run the `TRL_RATE_LIMITING.md` burst-check (20 POSTs → over-limit generic state → normal submission after the window).
 - [ ] Add the gate-5 platform rules: `X-Frame-Options`/CSP `frame-ancestors` pinning and `Strict-Transport-Security` on the final HTTPS domain (held out of the code so the preview harness and any temporary host never lock a bad decision into browsers, D-018 note).
 - [ ] Confirm the edge applies `public/_headers` to static responses and the Worker applies the contact CSP to `/contact/` (e2e-asserted in CI; re-checked on the real deploy).
+- [ ] Confirm the cache policy on the real edge, since the local preview is not the edge: `/fonts/*` and `/_astro/*` must answer `Cache-Control: public, max-age=31536000, immutable`, and documents/`robots.txt`/the sitemap must answer `public, max-age=0, must-revalidate` — each with **one** `Cache-Control` field, not a merged duplicate.
+- [ ] Re-run the `TRL_RATE_LIMITING.md` burst check once the founder's `namespace_id` is in place (20 POSTs → over-limit state → a normal submission after the window).
+- [ ] Watch Workers Logs for `outcome:"system-error"` after the first real traffic, and note that log retention is plan-bounded (Free: 3 days) — see the observability review in `TRL_GATE5_REVIEW.md` for what is and is not observable.
 
 ## Planned deployment documentation
 
 Before a release is proposed, this file must additionally document:
 
-- health checks and monitoring;
+- health checks and monitoring — the observability contract, its gaps, and Cloudflare's plan limits are already reviewed in `TRL_GATE5_REVIEW.md`, which Gate 6 should turn into the procedure above;
 - backup and retention behavior (trivial by design — no application data store);
 - rollback and recovery procedure;
 - staging/preview verification;

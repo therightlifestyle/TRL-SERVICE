@@ -49,6 +49,23 @@ const organizationSchema = {
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#F7F4EC" />
 
+    {/*
+      Both faces are preloaded: Newsreader sets every h1/h2 and Manrope sets
+      everything else, so both are render-critical on every route (Gate 5
+      performance review). Without the preload the display face is discovered
+      only after the stylesheet is parsed and styles are computed, which costs
+      an extra round trip on the largest text on the page and shows as a swap
+      from the Georgia fallback. `crossorigin` is required on font fetches —
+      an anonymous-mode preload that does not match the real request is
+      fetched twice.
+    */}
+    <link
+      rel="preload"
+      href="/fonts/newsreader-latin-500-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link
       rel="preload"
       href="/fonts/manrope-latin-wght-normal.woff2"
