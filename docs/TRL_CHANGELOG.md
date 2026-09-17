@@ -1,5 +1,14 @@
 # TRL — Changelog
 
+## 2026-09-17 — Post-Gate 4: e2e correction and preview host fix
+
+- Corrected the Gate 4 entry's claim that "browser-level flows [were] verified on CI". The suite's first real browser run (CI run `35243328351`, on the merge commit) **failed: 14 failed / 88 passed**. All 14 failures were one bug in the test helper, not in the site.
+- Fixed `tests/e2e/contact-form.spec.ts`: `waitForTurnstileToken` waited for the Turnstile token input with Playwright's default `state: 'visible'`, but the widget injects that field as a **hidden** input, so the wait could never succeed. It now waits for `state: 'attached'` and polls for the token value, and the failure message names the one realistic cause of an empty value. The other 88 tests — including every accessibility, content, navigation, and structure assertion on the new pages — passed unchanged.
+- Fixed `astro.config.mjs`: `allowedHosts` was under `vite.server`, which `astro preview` does not read, so a proxied preview host was rejected with HTTP 403. Moved to Astro's top-level `server.allowedHosts`, which Astro resolves for both the dev server and the adapter's preview entrypoint. Verified `GET /contact/` now returns 200 (was 403) when sent with the preview proxy's host header.
+- Re-verified the merged tree locally: `astro check` 0 errors/0 warnings/0 hints (40 files), build clean, 203 unit tests passing, and the full endpoint matrix re-exercised by curl (200 GET with the form enabled and no pre-rendered token input, 303 honeypot, 403 missing/bad token, 403 foreign origin, 405 method, 415 content-type, 200 `/contact/sent/` with `noindex, follow`).
+- Rewrote `TRL_SESSION_HANDOFF.md`, which still described the pre-merge state and reported the two fixes above as already committed when they were not.
+- No behaviour, copy, styling, dependency, account, or deployment change.
+
 ## 2026-09-17 — Gate 4: business flow (contact endpoint)
 
 - Implemented the contact endpoint as the single server-rendered route (D-014): `/contact/` handles GET and POST via `@astrojs/cloudflare` 14.3.2 + `wrangler` 4.133.0; all other routes remain prerendered. Static assets now build to `dist/client/`.
