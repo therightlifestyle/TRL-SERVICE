@@ -30,12 +30,24 @@ const VALID = {
 };
 
 async function waitForTurnstileToken(page: Page): Promise<void> {
-  await page.locator('input[name="cf-turnstile-response"]').waitFor({ timeout: 20_000 });
+  const token = page.locator('input[name="cf-turnstile-response"]');
+
+  // The widget injects this field itself and it is a HIDDEN input (see
+  // https://developers.cloudflare.com/turnstile/ — "Turnstile renders its own
+  // hidden input named cf-turnstile-response automatically"). Playwright's
+  // default waitFor state is `visible`, so waiting for it without an explicit
+  // state can never succeed. Wait for presence in the DOM instead.
+  await token.waitFor({ state: 'attached', timeout: 30_000 });
+
+  // The token arrives asynchronously once the check completes; the dummy
+  // sitekey always passes, so an empty value here means the widget never
+  // finished (in practice: the runner could not reach
+  // challenges.cloudflare.com).
   await expect
-    .poll(
-      async () => page.locator('input[name="cf-turnstile-response"]').inputValue(),
-      { message: 'Turnstile token was issued', timeout: 20_000 },
-    )
+    .poll(async () => token.inputValue(), {
+      message: 'Turnstile widget issued a token',
+      timeout: 30_000,
+    })
     .toBeTruthy();
 }
 

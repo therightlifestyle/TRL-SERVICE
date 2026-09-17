@@ -37,11 +37,12 @@ export default defineConfig({
   },
   server: {
     host: true,
-  },
-  vite: {
-    // The Arena preview proxies the dev server under an e2b.app host.
-    server: {
-      allowedHosts: true,
-    },
+    // The Arena preview proxies both `astro dev` and `astro preview` under an
+    // e2b.app host. Astro resolves this one key for BOTH: the dev container
+    // passes it to Vite's server, and the preview entrypoint receives it as
+    // `allowedHosts` (astro/dist/core/preview/index.js). Vite's own
+    // `vite.server.allowedHosts` is NOT read by `astro preview`, which needs
+    // `preview.allowedHosts` — so the setting has to live here.
+    allowedHosts: true,
   },
 });
