@@ -23,6 +23,15 @@ interface Props {
   minlength?: number;
   rows?: number;
   options?: readonly { value: string; label: string }[];
+  /**
+   * Unselected first option for a select. A required select must not arrive
+   * with a real value already chosen: without an empty leading option the
+   * browser preselects the first choice, so the control submits a value the
+   * visitor never picked and the "Required" status it advertises is a claim
+   * it does not honour (and its server-side "choose one" error becomes
+   * unreachable from a real browser).
+   */
+  prompt?: string;
   /** Submitted value to preserve after a server-side error. */
   value?: string;
   /** Server-side error message for this field. */
@@ -42,6 +51,7 @@ const {
   minlength,
   rows = 6,
   options = [],
+  prompt,
   value = '',
   error,
 } = Astro.props;
@@ -50,6 +60,8 @@ const hintId = hint ? `${id}-hint` : undefined;
 const errorId = error ? `${id}-error` : undefined;
 const describedBy = [hintId, errorId].filter(Boolean).join(' ');
 const invalid = error !== undefined;
+/** True when the submitted value matches one of the real choices. */
+const valueMatchesOption = options.some((option) => option.value === value);
 ---
 
 <div class="field" data-field={id}>
@@ -67,6 +79,11 @@ const invalid = error !== undefined;
   }
 
   {
+    /* A textarea's value is literally everything between its tags, so {value}
+       must sit flush against them. Any indentation or newline there becomes
+       part of the value: it breaks "preserve valid user input" (the visitor's
+       text would return indented after a failed POST) and it means a
+       brand-new form is not actually empty. */
     type === 'textarea' ? (
       <textarea
         class="field__control"
@@ -79,9 +96,7 @@ const invalid = error !== undefined;
         placeholder={placeholder}
         aria-describedby={describedBy || undefined}
         aria-invalid={invalid ? 'true' : undefined}
-      >
-        {value}
-      </textarea>
+      >{value}</textarea>
     ) : type === 'select' ? (
       <select
         class="field__control"
@@ -91,6 +106,11 @@ const invalid = error !== undefined;
         aria-describedby={describedBy || undefined}
         aria-invalid={invalid ? 'true' : undefined}
       >
+        {prompt !== undefined && (
+          <option value="" selected={!valueMatchesOption}>
+            {prompt}
+          </option>
+        )}
         {options.map((option) => (
           <option value={option.value} selected={option.value === value}>
             {option.label}
