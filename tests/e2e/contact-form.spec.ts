@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
 /*
@@ -15,7 +16,42 @@ import { expect, test, type Page } from '@playwright/test';
  *
  * The honeypot path needs no token (it short-circuits before verification),
  * so it doubles as a network-independent success-path test.
+ *
+ * ONE substitution is made, and it is browser-side only: the Turnstile
+ * *widget* is replaced by tests/e2e/fixtures/turnstile-stub.js. The reason is
+ * measured, not assumed — on a CI runner api.js loads and `window.turnstile`
+ * exists, but the widget never renders into `.cf-turnstile` (0 children,
+ * 0 iframes, 0 token inputs), so the real widget cannot be relied on. What the
+ * stub reproduces is exactly the contract the form depends on: a hidden
+ * `cf-turnstile-response` input carrying a token. Server-side verification is
+ * NOT stubbed — the preview still calls Cloudflare's real siteverify with the
+ * dummy secret, which accepts any non-empty token, so the pipeline under test
+ * remains the real one end to end.
  */
+
+const TURNSTILE_STUB = readFileSync(
+  new URL('./fixtures/turnstile-stub.js', import.meta.url),
+  'utf8',
+);
+
+/** Serve the stub widget in place of the real Turnstile script. */
+async function stubTurnstileWidget(page: Page): Promise<void> {
+  await page.route('**://challenges.cloudflare.com/**', (route) => {
+    if (route.request().url().includes('/turnstile/v0/api.js')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/javascript; charset=utf-8',
+        body: TURNSTILE_STUB,
+      });
+    }
+    // The stub never opens the challenge iframe, so nothing else is expected.
+    return route.abort();
+  });
+}
+
+test.beforeEach(async ({ page }) => {
+  await stubTurnstileWidget(page);
+});
 
 const ORIGIN = 'http://127.0.0.1:4321';
 
@@ -39,10 +75,8 @@ async function waitForTurnstileToken(page: Page): Promise<void> {
   // state can never succeed. Wait for presence in the DOM instead.
   await token.waitFor({ state: 'attached', timeout: 30_000 });
 
-  // The token arrives asynchronously once the check completes; the dummy
-  // sitekey always passes, so an empty value here means the widget never
-  // finished (in practice: the runner could not reach
-  // challenges.cloudflare.com).
+  // The token is written once the widget finishes, so poll for a non-empty
+  // value rather than assuming it landed with the element.
   await expect
     .poll(async () => token.inputValue(), {
       message: 'Turnstile widget issued a token',
@@ -82,6 +116,18 @@ test.describe('form structure (GET)', () => {
     }
 
     await expect(page.getByRole('button', { name: 'Send enquiry' })).toBeEnabled();
+  });
+
+  test('the required service select starts unchosen, so "Required" is honest', async ({
+    page,
+  }) => {
+    await page.goto('/contact/');
+
+    // Without an empty leading option the browser preselects the first real
+    // service, so the control would submit a choice the visitor never made
+    // and its server-side "choose a service" error would be unreachable.
+    await expect(page.locator('#service option').first()).toHaveValue('');
+    await expect(page.locator('#service')).toHaveValue('');
   });
 
   test('hides the honeypot from people and assistive technology, but not from the DOM', async ({
