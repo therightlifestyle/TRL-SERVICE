@@ -19,13 +19,13 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 - Define page/content boundaries, contact flow, data handling, environments, and test strategy. — Recorded in `TRL_ARCHITECTURE.md`.
 - Obtain founder input only for strategic/provider/ownership decisions. — Stack, hosting, contact delivery, and scope approved in session (D-005–D-008).
 
-### Gate 2 — Design System — next
+### Gate 2 — Design System — complete (2026-09-17)
 
-- Define typography, colors, spacing, layout, components, focus states, responsive rules, and reduced-motion behavior.
-- Validate the design direction against premium, minimal, precise, trustworthy TRL positioning.
-- Confirm the visual direction with the founder.
+- Defined typography, colors, spacing, layout, components, focus states, responsive rules, and reduced-motion behavior in `TRL_DESIGN_SYSTEM.md`.
+- Validated the system against the premium, minimal, precise, trustworthy TRL positioning.
+- Founder confirmed the direction: quiet authority, light-first, text-only wordmark, abstract systems graphics (D-009).
 
-### Gate 3 — Core Website
+### Gate 3 — Core Website — next
 
 - Build homepage, company/about context, services, offers/pricing, AI solutions, contact, and appropriate trust/legal content.
 - Add semantic structure, metadata, canonical strategy, robots/sitemap as appropriate.
@@ -55,4 +55,4 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-Begin Gate 2 — Design System: propose the design direction (typography, color, spacing, components, states, reduced motion), validate it against the premium, minimal, precise, trustworthy positioning, and confirm it with the founder. Gate 3 then scaffolds the Astro project with CI and the base layout before the core pages are built.
+Begin Gate 3 — Core Website: scaffold the smallest Astro + TypeScript project, pin and review the dependency lockfile, establish CI, implement the design tokens and base accessible layout/components, then build the approved core routes with truthful content and SEO foundations. The live contact submission workflow remains Gate 4 work.
