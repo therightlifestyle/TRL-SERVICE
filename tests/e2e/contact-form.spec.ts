@@ -126,7 +126,8 @@ test.describe('form structure (GET)', () => {
     // Without an empty leading option the browser preselects the first real
     // service, so the control would submit a choice the visitor never made
     // and its server-side "choose a service" error would be unreachable.
-    await expect(page.locator('#service option').first()).toHaveValue('');
+    // (`toHaveValue` only works on form controls, so read the attribute.)
+    await expect(page.locator('#service option').first()).toHaveAttribute('value', '');
     await expect(page.locator('#service')).toHaveValue('');
   });
 
@@ -219,10 +220,17 @@ test.describe('validation failures (POST)', () => {
       );
     }
 
-    await expect(page.getByText('Enter your name.')).toBeVisible();
-    await expect(page.getByText('Enter your email address.').first()).toBeVisible();
-    await expect(page.getByText('Choose the service you are interested in.')).toBeVisible();
-    await expect(page.getByText('Describe what you would like to change.')).toBeVisible();
+    // Assert on the field's own error element. The same wording also appears
+    // as a link in the error summary, so an unscoped getByText is ambiguous
+    // and trips Playwright's strict mode.
+    await expect(page.locator('#name-error')).toContainText('Enter your name.');
+    await expect(page.locator('#email-error')).toContainText('Enter your email address.');
+    await expect(page.locator('#service-error')).toContainText(
+      'Choose the service you are interested in.',
+    );
+    await expect(page.locator('#message-error')).toContainText(
+      'Describe what you would like to change.',
+    );
   });
 
   test('an error summary link moves focus to the field to fix', async ({ page }) => {
@@ -244,12 +252,14 @@ test.describe('validation failures (POST)', () => {
     await waitForTurnstileToken(page);
     await submit(page);
 
-    await expect(
-      page.getByText('Enter an email address in the correct format, like name@example.com.'),
-    ).toBeVisible();
-    await expect(
-      page.getByText('Your description should be at least 20 characters so we can answer usefully.'),
-    ).toBeVisible();
+    // Scoped to the field error element: the error summary repeats the same
+    // wording in a link, which makes an unscoped getByText ambiguous.
+    await expect(page.locator('#email-error')).toContainText(
+      'Enter an email address in the correct format, like name@example.com.',
+    );
+    await expect(page.locator('#message-error')).toContainText(
+      'Your description should be at least 20 characters so we can answer usefully.',
+    );
     await expect(page.locator('#name')).not.toHaveAttribute('aria-invalid', 'true');
   });
 
@@ -292,9 +302,11 @@ test.describe('submission outcomes (POST)', () => {
     await waitForTurnstileToken(page);
     await submit(page);
 
-    await expect(
-      page.getByRole('heading', { name: 'Your message was not sent' }),
-    ).toBeVisible();
+    // The Notice component sets its title as a bold paragraph, not a heading
+    // element, so this is asserted as the error notice's heading text.
+    await expect(page.locator('.notice--error .notice__heading')).toHaveText(
+      'Your message was not sent',
+    );
 
     // Input survives the failure so nothing has to be retyped.
     await expect(page.locator('#message')).toHaveValue(VALID.message);
