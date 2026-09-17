@@ -21,7 +21,10 @@ import {
 /*
  * Gate 4: this page is the contact endpoint (D-005 — the one server route).
  * It prerenders nothing; GET renders the form and POST processes the
- * submission. Same-origin enforcement is provided by Astro's built-in
+ * submission. The Workers rate-limit binding, when the deployment provides
+ * one, is handed to the endpoint here; it is `undefined` in local preview and
+ * CI, which the endpoint treats as "allow" (docs/TRL_RATE_LIMITING.md).
+ * Same-origin enforcement is provided by Astro's built-in
  * `checkOrigin`, which rejects form POSTs with a missing or foreign Origin
  * before this component runs. All submission logic lives in src/lib/contact.ts.
  */
@@ -43,7 +46,11 @@ let formState: FormState = {
 };
 
 if (method === 'POST') {
-  const result = await handleContactPost(Astro.request, { ...cfEnv }, createContactDeps());
+  const result = await handleContactPost(
+    Astro.request,
+    { ...cfEnv },
+    createContactDeps(cfEnv.CONTACT_RATE_LIMITER),
+  );
   if (result.outcome === 'redirect') {
     return Astro.redirect(result.location, 303);
   }

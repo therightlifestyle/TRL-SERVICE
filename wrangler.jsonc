@@ -16,4 +16,27 @@
   "observability": {
     "enabled": true
   }
+
+  /*
+   * Rate limiting for POST /contact/ (docs/TRL_RATE_LIMITING.md).
+   *
+   * The enforcing code is committed and tested: the endpoint reads
+   * `env.CONTACT_RATE_LIMITER` and fails open when it is absent, which is why
+   * local preview and CI work unchanged with this block commented out.
+   *
+   * It stays commented because `namespace_id` is account-scoped — a positive
+   * integer unique to the founder's Cloudflare account, which does not yet
+   * exist (D-004/D-006). Committing an invented value would fabricate
+   * infrastructure and, worse, would deploy against whatever namespace that
+   * integer happened to collide with. Uncomment and set the integer at the
+   * deployment gate; nothing else needs to change.
+   *
+   * "ratelimits": [
+   *   {
+   *     "name": "CONTACT_RATE_LIMITER",
+   *     "namespace_id": "<founder-supplied positive integer, as a string>",
+   *     "simple": { "limit": 10, "period": 10 }
+   *   }
+   * ]
+   */
 }

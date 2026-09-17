@@ -18,5 +18,15 @@ declare module 'cloudflare:workers' {
     CONTACT_TO_EMAIL?: string;
     /** Verified sender address for the delivery email. */
     RESEND_FROM_EMAIL?: string;
+    /**
+     * Workers rate-limit binding guarding `POST /contact/`
+     * (`10` requests per `10`s per visitor IP). Optional on purpose: the
+     * binding only exists once the founder provisions the namespace at the
+     * deployment gate, so local preview and CI see `undefined` and the
+     * endpoint fails open. See docs/TRL_RATE_LIMITING.md.
+     */
+    CONTACT_RATE_LIMITER?: {
+      limit(options: { key: string }): Promise<{ success: boolean }>;
+    };
   };
 }

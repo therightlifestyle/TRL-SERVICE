@@ -66,6 +66,7 @@ export interface ComposedEmail {
 
 export type ContactLogOutcome =
   | 'accepted'
+  | 'rejected-rate-limit'
   | 'rejected-honeypot'
   | 'rejected-turnstile'
   | 'invalid'
@@ -85,11 +86,32 @@ export interface ContactLogEvent {
     | 'unconfigured-turnstile'
     | 'unconfigured-delivery'
     | 'delivery-failed'
-    | 'delivery-network';
+    | 'delivery-network'
+    | 'rate-limiter-error';
+}
+
+/**
+ * The Workers rate-limit binding shape (`env.CONTACT_RATE_LIMITER`).
+ * See docs/TRL_RATE_LIMITING.md: `simple: { limit: 10, period: 10 }`, keyed
+ * on the visitor IP. Declared structurally so the endpoint needs no runtime
+ * import from `cloudflare:workers`.
+ */
+export interface RateLimitBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
 /** Injectable external effects. */
 export interface ContactDeps {
+  /**
+   * Volumetric abuse ceiling, checked first in the pipeline.
+   *
+   * Returns `true` when the request is allowed. Fail-open by contract: when
+   * the binding is absent (local preview, CI) or errors, the implementation
+   * answers `true`, because rate limiting is an abuse ceiling and not the
+   * trust boundary that decides whether a message is genuine — Turnstile and
+   * validation are. See docs/TRL_RATE_LIMITING.md, "Failure posture".
+   */
+  checkRateLimit?(key: string): Promise<boolean>;
   verifyTurnstile(secret: string, token: string, ip?: string): Promise<boolean>;
   sendEmail(email: ComposedEmail, apiKey: string): Promise<boolean>;
   log(event: ContactLogEvent): void;
@@ -100,7 +122,7 @@ export type ContactPostResult =
   | { outcome: 'redirect'; location: '/contact/sent/' }
   | {
       outcome: 'render';
-      status: 400 | 403 | 415 | 422 | 503;
+      status: 400 | 403 | 415 | 422 | 429 | 503;
       /** Generic, user-facing failure kind. `undefined` never occurs with 422. */
       formError?: 'verification' | 'unavailable';
       fieldErrors?: ContactFieldErrors;
@@ -272,8 +294,13 @@ export function isFormContentType(contentType: string | null): boolean {
 /**
  * Processes a POST to /contact/.
  *
- * Order matters and is asserted by tests: honeypot → Turnstile → validation →
- * delivery. Everything a user can see on failure is generic.
+ * Order matters and is asserted by tests: rate limit → honeypot → Turnstile →
+ * validation → delivery. Everything a user can see on failure is generic.
+ *
+ * The rate-limit check is the first rejection decision, placed immediately
+ * after body parsing so an over-limit client can never spend a Turnstile
+ * verification or a Resend send, while a rate-limited person still gets their
+ * input echoed back (docs/TRL_RATE_LIMITING.md).
  */
 export async function handleContactPost(
   request: Request,
@@ -281,6 +308,11 @@ export async function handleContactPost(
   deps: ContactDeps,
 ): Promise<ContactPostResult> {
   const requestId = crypto.randomUUID();
+
+  // Keyed on the Cloudflare-set visitor IP, which the client cannot spoof. A
+  // request with no such header (local preview, a direct unit call) is not
+  // limited — there is no trustworthy key to count against.
+  const clientIp = request.headers.get('cf-connecting-ip')?.trim() ?? '';
 
   if (!isFormContentType(request.headers.get('content-type'))) {
     deps.log({ event: 'contact', requestId, outcome: 'bad-request', reason: 'content-type' });
@@ -309,6 +341,29 @@ export async function handleContactPost(
     business: str(record, 'business'),
   };
 
+  // Rate limit: the first *decision* in the pipeline, and the first thing
+  // that can reject a well-formed submission. It runs after the body is
+  // parsed and before the honeypot, which is the earliest point that both
+  // bounds the paid work and can echo the visitor's input back to them.
+  //
+  // Reading the body first costs no network call and no third-party spend:
+  // Turnstile verification and Resend delivery — the only expensive exits —
+  // both come strictly after this check, so an over-limit client still cannot
+  // make this endpoint spend anything. What it buys is that a real person who
+  // trips the ceiling gets their typing back, which the 503 path already
+  // guarantees and which a pre-parse check could not.
+  //
+  // It also precedes the honeypot deliberately: rejecting on volume before
+  // judging bot-ness means the response ordering reveals nothing about which
+  // submissions were assessed as human.
+  if (deps.checkRateLimit !== undefined && clientIp !== '') {
+    const allowed = await deps.checkRateLimit(clientIp);
+    if (!allowed) {
+      deps.log({ event: 'contact', requestId, outcome: 'rejected-rate-limit' });
+      return { outcome: 'render', status: 429, formError: 'unavailable', values };
+    }
+  }
+
   // Honeypot: reject before any network call or validation hint.
   if (str(record, HONEYPOT_FIELD).trim() !== '') {
     deps.log({ event: 'contact', requestId, outcome: 'rejected-honeypot' });
@@ -332,7 +387,7 @@ export async function handleContactPost(
     return { outcome: 'render', status: 403, formError: 'verification', values };
   }
 
-  const ip = request.headers.get('cf-connecting-ip') ?? undefined;
+  const ip = clientIp === '' ? undefined : clientIp;
   const verified = await deps.verifyTurnstile(secret, token, ip);
   if (!verified) {
     deps.log({
@@ -425,11 +480,42 @@ async function sendEmailWithResend(email: ComposedEmail, apiKey: string): Promis
   }
 }
 
+/**
+ * Wraps the Workers rate-limit binding in the fail-open contract.
+ *
+ * `undefined` binding (local `astro preview`, CI, or before the founder
+ * provisions the namespace) means "always allow". A binding that throws also
+ * means allow, with the failure logged — a degraded limiter must never
+ * degrade the form.
+ */
+export function createRateLimitCheck(
+  binding: RateLimitBinding | undefined,
+  log: (event: ContactLogEvent) => void,
+): ((key: string) => Promise<boolean>) | undefined {
+  if (binding === undefined) return undefined;
+  return async (key: string) => {
+    try {
+      const { success } = await binding.limit({ key });
+      return success;
+    } catch {
+      log({
+        event: 'contact',
+        requestId: 'rate-limiter',
+        outcome: 'system-error',
+        reason: 'rate-limiter-error',
+      });
+      return true;
+    }
+  };
+}
+
 /** Production dependencies: real Cloudflare and Resend calls, console logging. */
-export function createContactDeps(): ContactDeps {
+export function createContactDeps(rateLimiter?: RateLimitBinding): ContactDeps {
+  const log = (event: ContactLogEvent) => console.log(JSON.stringify(event));
   return {
+    checkRateLimit: createRateLimitCheck(rateLimiter, log),
     verifyTurnstile: verifyTurnstileWithCloudflare,
     sendEmail: sendEmailWithResend,
-    log: (event) => console.log(JSON.stringify(event)),
+    log,
   };
 }
