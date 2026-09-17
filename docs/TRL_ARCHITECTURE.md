@@ -1,6 +1,6 @@
 # TRL — Architecture
 
-_Last updated: 2026-09-17 (Gate 3). The stack below is founder-approved and recorded in `TRL_DECISIONS.md` (D-005–D-008). The static site is now implemented; the contact endpoint is not. Nothing has been purchased or deployed._
+_Last updated: 2026-09-17 (Gate 5 in progress). The stack below is founder-approved and recorded in `TRL_DECISIONS.md` (D-005–D-008). The static site and the contact endpoint are implemented and covered by CI; security headers and the CSP are implemented at Gate 5 (D-018) and platform rate limiting is planned. Nothing has been purchased or deployed._
 
 ## Phase 1 architecture goals
 
@@ -78,6 +78,12 @@ src/lib/site.ts         Founder-approved facts: contact, offers, services, solut
 src/lib/contact.ts      The whole submission pipeline as pure functions:
                         validation, honeypot, Turnstile orchestration, email
                         composition, logging, and the fail-closed rules
+src/lib/security.ts     Canonical security headers and both CSPs (D-018);
+                        consumed by src/middleware.ts and public/_headers
+src/middleware.ts       Sets the contact CSP on Worker-rendered responses;
+                        static responses get their headers from public/_headers
+public/_headers         Edge security headers + static-pages CSP for the ASSETS
+                        binding (copied to dist/client at build, mirror-pinned)
 src/styles/tokens.css   The single source of token values in the codebase
 src/styles/global.css   Reset, base typography, focus, layout primitives, motion
 src/layouts/BaseLayout.astro  Document head, metadata, JSON-LD, landmarks, skip link
@@ -111,7 +117,9 @@ Build output: `dist/client/` holds the prerendered pages and static assets, and 
 
 Logging: one structured outcome event per request (`accepted`, `rejected-honeypot`, `rejected-turnstile`, `invalid`, `bad-request`, `system-error`, plus a reason and a request id). A unit test asserts no submitted value, credential, or token ever appears in a log line.
 
-Rate limiting and abuse controls: Turnstile, the honeypot, origin checking, and platform-level protection on the Cloudflare account. A platform rate-limit binding is a documented Gate 5 candidate; it needs no application storage today because there is no data store by design.
+Rate limiting and abuse controls: Turnstile, the honeypot, origin checking, and platform-level protection on the Cloudflare account. Gate 5 fixed the platform rate-limit plan in `TRL_RATE_LIMITING.md`: a Workers `ratelimits` binding (`CONTACT_RATE_LIMITER`, `10 / 10s`, keyed on `cf-connecting-ip`) checked first in the POST pipeline, failing to a generic preserved-input state, with fail-open on an absent/degraded binding. It remains a plan rather than committed config because the binding's `namespace_id` is an account-scoped founder value — see that document for the full design and the deployment-gate actions.
+
+Response security (D-018): security headers are applied at the deployment boundary the architecture actually has — static responses receive `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and a `script-src 'none'` CSP from `public/_headers`; Worker-rendered `/contact/` responses receive the contact CSP (the static CSP plus `challenges.cloudflare.com` in `script-src`/`frame-src`) from `src/middleware.ts`. Both are pinned to `src/lib/security.ts`.
 
 ## Email delivery and free-tier restrictions (recorded per D-007)
 
@@ -157,17 +165,20 @@ Runtime variables are read through `import { env } from 'cloudflare:workers'`, n
 
 ## Test strategy
 
-- Unit (Vitest): content invariants that fail if prices, contact details, offers, or routes deviate from approved values; design-token values and recomputed contrast ratios; structural/accessibility checks with axe-core and jsdom over the real build output; the complete form-validation matrix with exact boundary values; and the whole POST pipeline with injected fakes for Turnstile, delivery, and logging — ordering, fail-closed behaviour, the exact email payload, log hygiene, and status codes are all asserted without a network. The real network calls are thin `fetch` wrappers whose contracts the fakes mirror.
+- Unit (Vitest): content invariants that fail if prices, contact details, offers, or routes deviate from approved values; design-token values and recomputed contrast ratios; structural/accessibility checks with axe-core and jsdom over the real build output; the security-header/CSP module and the `_headers` mirror it pins; the complete form-validation matrix with exact boundary values; and the whole POST pipeline with injected fakes for Turnstile, delivery, and logging — ordering, fail-closed behaviour, the exact email payload, log hygiene, and status codes are all asserted without a network. The real network calls are thin `fetch` wrappers whose contracts the fakes mirror.
 - E2E (Playwright): core navigation and landmarks, offer and contact content, the 404 and robots/sitemap responses, keyboard and skip-link behaviour, 320px reflow, target size, reduced motion, no-CSS resilience, and axe runs on every route — including the form's error states. The contact-form suite runs the real flow in a browser against the production build with Cloudflare's published dummy Turnstile keys and no delivery configuration: verification genuinely passes through Cloudflare's siteverify, validation errors come from the real server, and a fully valid submission reaches the delivery boundary and produces the honest generic failure state. Email delivery itself is never exercised in e2e — a server-side outbound call cannot be intercepted by Playwright, and adding a delivery-mock mode reachable in production was rejected as a security regression (D-016); delivery with real credentials is verified manually at the deployment gate.
 - CI (GitHub Actions): `npm ci` → typecheck (`astro check`) → build → unit → e2e, plus a dependency audit, on every pull request.
 - Accessibility: axe runs in both suites; a manual keyboard, zoom, and screen-reader pass before launch.
 
 Division of labour between the suites: anything that depends on painted pixels or a real engine — colour contrast as rendered, focus visibility, reflow, keyboard order — belongs to Playwright. Everything verifiable from the HTML and the token source runs in Vitest, so most regressions are caught without a browser.
+- Accessibility: axe runs in both suites; the manual keyboard/zoom/reflow/screen-reader pass plus the real-Turnstile-widget eyeball checks (D-017) are scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md` and run in the deployed preview.
 - Performance/SEO: Lighthouse audits at Gates 5 and 7.
 - Email delivery: verified manually with real credentials before launch; never in CI.
 
 ## Remaining architecture-adjacent decisions
 
-- Analytics provider or none — Gate 5, founder decision.
+- Analytics provider or none — Gate 5, founder decision (revisited; still open).
 - Payment provider and account ownership — after first release, when the founder authorizes; offer CTAs are payment-ready.
 - Legal text — founder decision before launch.
+- Rate-limit `namespace_id` and the Cloudflare account that provisions it — founder action at the deployment gate (`TRL_RATE_LIMITING.md`).
+- `X-Frame-Options`/`frame-ancestors` pinning and HSTS — deployment-gate platform rules (D-018 note).

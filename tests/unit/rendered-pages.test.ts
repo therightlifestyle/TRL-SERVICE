@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { buildOnce } from './helpers/build-once';
 
 /*
  * Structural and accessibility checks against the real build output.
@@ -33,11 +33,6 @@ const pages = [
   { path: '404.html', route: '/404' },
 ];
 
-function buildIfNeeded(): void {
-  if (existsSync(join(DIST, 'index.html'))) return;
-  execFileSync('npx', ['astro', 'build'], { stdio: 'inherit' });
-}
-
 function load(page: string): JSDOM {
   return new JSDOM(readFileSync(join(DIST, page), 'utf8'), {
     url: `https://therightlifestyle.com${page === 'index.html' ? '/' : `/${page}`}`,
@@ -47,7 +42,7 @@ function load(page: string): JSDOM {
 }
 
 beforeAll(() => {
-  buildIfNeeded();
+  buildOnce();
 }, 180_000);
 
 describe('build output', () => {

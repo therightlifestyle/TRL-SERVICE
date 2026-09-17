@@ -1,83 +1,73 @@
 # TRL — Session Handoff
 
-_Last updated: 2026-09-17 (post-#5 correction session)_
+_Last updated: 2026-09-17 (Gate 5 session)._
 
 ## Current status
 
-Gate 4 — Business Flow is **merged into `main`** (PR #5, merge commit `c5cbbaf`). The contact form is live in code: `/contact/` is the single server-rendered route (Astro's Cloudflare adapter), carrying the whole submission pipeline — same-origin enforcement, honeypot, Turnstile verification, server-side validation, fail-closed Resend delivery, generic errors, and PII-free logging — with accessible error states, preserved input, and a noindex confirmation page. Eight other routes remain prerendered static HTML.
+Gate 4 — Business Flow is **merged into `main`** (PR #5, merge commit `c5cbbaf`) and `main` was repaired by PR #6 (the post-#5 correction session). This session opened **Gate 5 — Production Hardening** and landed its first three deliverables:
 
-**This session fixed `main`.** PR #5 merged with CI red: the browser suite had never actually executed successfully, and its first real run failed 14 tests. Working from CI evidence rather than the previous session's report, this session found and fixed **four** distinct defects — two in the tests, **two in the site**. Final state on this branch: CI green, **104 e2e tests passing**, 203 unit tests passing, `astro check` clean.
+1. **Security headers and the CSP are implemented (D-018).** `src/lib/security.ts` is the single source of truth; `public/_headers` (committed, copied to `dist/client/_headers` at build) applies the common headers plus the **static-pages CSP** (`script-src 'none'`) to every static-asset response, and `src/middleware.ts` applies the **contact CSP** — the static policy plus D-015's one sanctioned exception, `script-src`/`frame-src` from `https://challenges.cloudflare.com` — to Worker-rendered `/contact/` responses. Verified empirically against the real preview: static routes serve the `'none'` policy, `/contact/` GET and POST serve the Turnstile policy.
+2. **The rate-limit plan for `POST /contact/`** is fixed in `docs/TRL_RATE_LIMITING.md`: a Workers `ratelimits` binding (`CONTACT_RATE_LIMITER`, `10 / 10s`, keyed on `cf-connecting-ip`) checked first in the POST pipeline, failing to the generic preserved-input state, fail-open when the binding is absent or degraded. It is a **plan, not committed config**, because `namespace_id` is an account-scoped founder value (no Cloudflare account exists) — committing a made-up one would fabricate infrastructure.
+3. **The manual accessibility pass is scheduled** in `docs/TRL_MANUAL_ACCESSIBILITY_PASS.md`, and now **includes the real Turnstile widget's rendering and size checks** that D-017 took out of automation: keyboard operability, 200%-zoom/320px fit of the `compact` widget (the 280px-column-vs-300px-minimum question), and the screen-reader announcement.
 
-Nothing is deployed and no provider accounts exist, so delivery with real credentials is the founder's deployment-gate step.
+Nothing is deployed and no provider accounts exist, so delivery with real credentials remains the founder's deployment-gate step.
 
 ## Current phase and gate
 
 Phase 1 — Professional service foundation and commercial entry point.
 
-Completed: Gate 0 — Repository Reset; Gate 1 — Architecture; Gate 2 — Design System; Gate 3 — Core Website; Gate 4 — Business Flow (merged).
+Completed: Gates 0–4. **Gate 5 — Production Hardening is in progress** (three deliverables landed below).
 
-Active gate for the next session: **Gate 5 — Production Hardening**.
+## How the headers work (D-018) — read this before touching them
 
-## What this session found and fixed
+The deployment boundary is Cloudflare Workers **with static assets**, which splits responses into two paths that never meet:
 
-The previous session's handoff reported the e2e fixes and a preview-host fix as committed. Neither existed: the branch was clean at the merge commit with no local commits, PR #5 was already merged, and GitHub authentication was working fine. Every item below was re-derived from the repository or from CI in this session.
+- **Static responses** (the eight prerendered routes, `/contact/sent/`, fonts, CSS, robots, sitemap) are served by the ASSETS binding **before Worker code runs**, so `_headers` rules apply. That file is `public/_headers`, mirror-pinned to `src/lib/security.ts`.
+- **Worker responses** (`/contact/` GET/POST and its error/redirect responses) do **not** receive `_headers` rules (Cloudflare documents this; the adapter's handler confirms it). `src/middleware.ts` therefore sets the contact CSP there.
 
-### Site defects (these shipped in #5)
+`X-Frame-Options`/`frame-ancestors` and HSTS are deliberately **not** in either path (the preview harness embeds the site cross-origin; HSTS on a temporary host would lock a bad decision into browsers). They are platform rules for the deployment gate.
 
-1. **The required service select was not required.** `Field.astro` rendered a required `<select>` with only the four real options, so the browser preselected the first (`micro-audit`). The control submitted a service the visitor never chose, the "Required" label was a claim it did not honour, and `validateContactForm`'s "Choose the service you are interested in." error was unreachable from a browser. Fix: a `prompt` prop renders an empty leading option, selected when no real choice matches; `/contact/` passes `prompt="Choose a service"`. Confirmed fixed in a real browser — the error-summary test asserting **four** links including `#service` now passes.
-2. **The message textarea absorbed template whitespace.** A `<textarea>`'s value is literally everything between its tags, and `{value}` was rendered on its own indented line. Every textarea therefore carried a leading newline, indentation, and a trailing newline — silently breaking the design system's "preserve valid user input" rule (the visitor's message came back indented and no longer equalled what they typed) and meaning a brand-new form was never actually empty. Fix: render `{value}` flush against the tags. Only `contact.astro` uses a textarea.
+## This session's changes
 
-### Test and configuration defects
-
-3. **The Turnstile token wait could never succeed** (`state: 'visible'` on an input the widget injects as `type=hidden`). Changed to `state: 'attached'` plus a poll. That fixed the diagnosis and revealed the deeper problem: the widget never renders at all on a CI runner.
-4. **The preview host allowlist was in the wrong place.** `allowedHosts` sat under `vite.server`, which `astro preview` does not read (it needs `preview.allowedHosts`), so a proxied preview host got HTTP 403. Moved to Astro's top-level `server.allowedHosts`, which Astro resolves for both dev and the adapter's preview entrypoint (`astro/dist/core/preview/index.js:71`). Verified: `GET /contact/` with the proxy's host header returns 200 (was 403).
-
-### D-017 — the Turnstile widget is substituted in the browser only
-
-A temporary diagnostic spec (deleted) reported through CI check-run annotations and established, on a real runner: `api.js` loads (302 → 200) and `window.turnstile` exists, yet the widget never renders into `.cf-turnstile` — 0 children, 0 iframes, 0 token inputs. So `tests/e2e/fixtures/turnstile-stub.js` is now served in place of `api.js` via Playwright request interception, reproducing only the contract the form depends on: a hidden `cf-turnstile-response` input carrying a token.
-
-**Server-side verification is not stubbed.** The preview still calls Cloudflare's real `siteverify` with the published dummy secret, and the same diagnostic showed it accepts an arbitrary token (its POST reached the delivery boundary with 503 rather than being rejected with 403). No production code changed to enable this, so there is no environment switch to misconfigure — D-016's intent holds.
+- Added `src/lib/security.ts` (canonical headers + both CSPs + `withSecurityHeaders`), `src/middleware.ts`, `public/_headers`.
+- Removed the Turnstile `Response`-header additions from `src/pages/contact.astro` (the middleware now owns them once, for every Worker response).
+- Added `tests/unit/security-headers.test.ts` (policy contents, `withSecurityHeaders`, and the `_headers` mirror — reads `dist/client/_headers`, so it builds if absent) and two e2e tests in `tests/e2e/content.spec.ts` (static-page headers + the contact-CSP Turnstile exception).
+- Authored `docs/TRL_RATE_LIMITING.md` and `docs/TRL_MANUAL_ACCESSIBILITY_PASS.md`; recorded **D-018** in the decision log; updated security, architecture, deployment, operating-state, phase-1-plan, and README-adjacent docs.
+- **Local verification:** `astro check` 0 errors/0 warnings/0 hints (43 files); **220 unit tests passing**; curl against the real preview shows all three header paths correct (static 200, contact 200, contact POST 303). E2E could not run here (no browser CDN reachability — see known issues); it must pass on CI.
 
 ## Remaining work
 
-- Gate 5: security headers and CSP (allow `challenges.cloudflare.com` script/frame on `/contact/`), platform rate limiting for `POST /contact/`, and the manual accessibility/performance/SEO reviews.
-- Gates 6–8: deployment readiness (founder accounts: Cloudflare, Turnstile, Resend), final verification, founder launch approval.
-- Founder actions parked at the deployment gate: create the accounts, set production keys, verify the sender domain (DNS change — explicit authorization), and send/receive one real enquiry end-to-end (the D-016 manual check).
+- **Gate 5 remainder:** dependency re-review; Lighthouse/performance + SEO audit; monitoring/observability review (the `wrangler.jsonc` `observability` flag is on); the analytics founder decision. Then **Gates 6–8** (deployment readiness, final verification, founder launch approval).
+- **Deployment gate (founder):** create Cloudflare/Turnstile/Resend accounts; production keys; sender-domain verification (DNS change — explicit authorization); real enquiry end-to-end; rate-limit `namespace_id` + burst-check; framing/HSTS platform rules; run `TRL_MANUAL_ACCESSIBILITY_PASS.md`.
 
 ## Known issues and risks
 
-- **The real Turnstile widget is no longer covered by automation** (D-017). Its rendering, sizing, and the `compact` size choice for the 320px reflow floor must be checked by eye in a deployed preview. Added to the deployment-gate manual checklist alongside real delivery.
-- **The e2e suite cannot run in the authoring sandbox** — the Playwright browser CDN and `challenges.cloudflare.com` are both unreachable from it, and `challenges.cloudflare.com` being blocked there also means server-side verification cannot be exercised locally. CI is the only place the browser suite executes. This sandbox also cannot read CI logs or artifacts (both are served from a blocked host), only check-run annotations — which is why the diagnostic reported through an assertion message, and why GitHub's 10-annotation-per-run cap matters if you need that trick again.
-- Email delivery is **unverified with real credentials** — no Resend account exists. The delivery contract is unit-tested; the real send is the deployment-gate checklist item.
-- Turnstile verification, delivery, and the sitekey are per-deployment configuration: missing `PUBLIC_TURNSTILE_SITEKEY` renders the form disabled with an honest notice (by design); missing `TURNSTILE_SECRET` or the Resend variables fail closed with the generic error state.
-- No manual keyboard, zoom, screen-reader, or real-device pass has been performed.
-- Page copy remains founder-unreviewed, like the rest of the site's text.
-- `.dev.vars` loading and the `dist/client` layout were verified empirically; if the adapter changes them, `.dev.vars.example`, the Playwright webServer command, and `tests/unit/rendered-pages.test.ts` are the coupled places.
+- **The e2e suite cannot run in the authoring sandbox** — the Playwright browser CDN and `challenges.cloudflare.com` are both unreachable; CI is the only place the browser suite executes. The two new header e2e tests therefore only run on CI.
+- **The real Turnstile widget is not covered by automation** (D-017) — now on the scheduled manual pass, listed above.
+- **Rate limit is a plan** until the founder's account exists; its code path (a `limitOutcome` dependency at the head of `handleContactPost`) is designed but **not yet written** — do not wire it before the account exists, and follow the fail-open posture when doing so (`TRL_RATE_LIMITING.md`).
+- Email delivery unverified with real credentials (founder step). Turnstile/delivery remain fail-closed per-deployment config.
+- Page copy remains founder-unreviewed. No manual keyboard/zoom/screen-reader pass has yet been performed (now scheduled).
+- The preview runtime logs `Unable to fetch the Request.cf object!` and a TLS-warning line during local prerender/preview — pre-existing sandbox noise, not caused by this gate.
 
-## Decisions recorded
+## Decisions recorded this session
 
-- D-014: the contact endpoint is a server-rendered `/contact/` route on `@astrojs/cloudflare`; the concrete platform is Cloudflare Workers with static assets — **flagged for founder review**.
-- D-015: Cloudflare's Turnstile script on `/contact/` is the one sanctioned third-party client script; D-010's zero-first-party-JS baseline holds everywhere.
-- D-016: no delivery-mock backdoor exists; e2e proves the pipeline to the delivery boundary, unit tests prove the delivery contract, and real delivery is verified manually at the deployment gate.
-- **D-017 (new):** the e2e suite replaces the Turnstile *widget* in the browser only; server-side verification stays real. Refinement of D-016, made necessary by the measured failure of the real widget to render on a CI runner.
+- **D-018** — dual-write response headers/CSP with the single sanctioned Turnstile exception (see `TRL_DECISIONS.md` for the full record).
 
 ## Verification
 
 Re-run this session:
 
-- CI run `35250795133` on this branch: **all three jobs success**. End-to-end and browser accessibility tests: **104 passed, 0 failed** (41.2s).
-- `astro check`: **0 errors, 0 warnings, 0 hints** (40 files).
-- `npm run build`: complete; `dist/client` static output plus the server entry.
-- `npm run test:unit`: **203 tests passing** across 5 files.
-- Against the live `astro preview`, including the proxied host header: `GET /contact/` → 200 with the form enabled, dummy sitekey, `data-size="compact"`, the unchosen `Choose a service` option, and a genuinely empty message textarea (`value === ""`); a POST re-render preserves every field with the message matching exactly; honeypot → 303; missing/bad token → 403; JSON → 415; `PUT` → 405; foreign Origin → 403; `/contact/sent/` → 200 with `noindex, follow`. Logs carry outcome events only.
-- Progression of the e2e suite across this session's CI runs, all measured: 14 failed / 88 passed → 8 failed / 96 passed → 2 failed / 102 passed → **0 failed / 104 passed**.
+- `npm run typecheck` → `astro check`: **0 errors, 0 warnings, 0 hints** (43 files).
+- `npm run test:unit` → **220 tests passing** across 6 files (was 203 at Gate 4; +17 security-header tests).
+- `npm run build` → clean; `dist/client/_headers` contains the catch-all rule plus the adapter-injected immutable `/_astro/*` rule, and `dist/server/entry.mjs` bundles the middleware.
+- Against live `npx astro preview`: `GET /` and `GET /offers/` → 200 with the static CSP (`script-src 'none'`) + `X-Content-Type-Options: nosniff` + `Referrer-Policy` + `Permissions-Policy`; `GET /contact/` and `POST /contact/` (honeypot, 303) → the contact CSP with `script-src https://challenges.cloudflare.com` and `frame-src https://challenges.cloudflare.com`.
+- CI is the authority for the browser suite, including the two new header assertions.
 
 ## Git
 
-- Branch: `arena/01a0b01d-trl-service`, cut from the PR #5 merge commit `c5cbbaf`.
-- Pull request: **#6** — "Fix the e2e Turnstile wait and the preview host allowlist" (the title understates it; the body carries the full account).
-- GitHub authentication is working (`gh auth status` and `git ls-remote origin` both succeed); the previous session's note that the connection had expired was incorrect.
+- Branch: `arena/01a0b073-trl-service`.
+- Gate 5 progress since the PR #6 merge commit `fc67731`; commit/push/PR this branch when the gate's remaining reviews are done. GitHub authentication is working (`gh auth status`, `git ls-remote origin`).
 
 ## NEXT SINGLE ACTION
 
-Merge PR #6 — it is green, and `main` is red without it. Then begin Gate 5 — Production Hardening: security headers and the CSP (with the `challenges.cloudflare.com` exception), a platform rate-limit plan for `POST /contact/`, and scheduling the manual accessibility pass, which must now also cover the real Turnstile widget's rendering and size (D-017).
+Push this branch and open the PR so CI runs the new header tests, then complete the remaining Gate 5 reviews (dependency re-review, Lighthouse/performance + SEO, monitoring) and hand the analytics decision to the founder. Keep the rate limiter unwired until the founder's Cloudflare account supplies a `namespace_id`.

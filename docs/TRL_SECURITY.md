@@ -1,6 +1,6 @@
 # TRL — Security Baseline
 
-_Last updated: 2026-09-17 (Gate 4)._
+_Last updated: 2026-09-17 (Gate 5 in progress — security headers and CSP implemented; rate limiting planned)._
 
 ## Current status
 
@@ -25,10 +25,17 @@ The site and the contact endpoint exist in the repository; no deployment exists.
 - **Injection resistance:** all re-rendered values pass through Astro's HTML escaping; the email is plain text delivered as JSON to the Resend API (no SMTP headers to inject); phone numbers are character-class constrained; control characters are rejected.
 - **No storage:** no database, no files, no session cookies for the form; the founder's inbox is the system of record (D-007).
 
+### Implemented at Gate 5 (security headers and CSP)
+
+- The single source of truth for response-security headers lives in `src/lib/security.ts` and is consumed in exactly the two places the Workers-with-static-assets boundary requires (D-018):
+  - `public/_headers` (committed; copied to `dist/client/_headers`) applies `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and the **static-pages CSP** to every static-asset response — `script-src 'none'` there makes the D-010 no-client-JavaScript baseline enforceable by the browser on the eight prerendered routes.
+  - `src/middleware.ts` wraps every Worker-rendered response (`/contact/` and its errors/redirects) with the **contact CSP**, the one difference being D-015's sanctioned exception: `script-src` and `frame-src` from `https://challenges.cloudflare.com`. Cloudflare's `_headers` does not apply to Worker responses, which is why the header is set in code. One documented exception: a form POST rejected by Astro's built-in origin check (missing/foreign `Origin`) short-circuits before user middleware, so that bare 403 carries no custom headers — it has no content to harden.
+- `tests/unit/security-headers.test.ts` pins the `_headers` mirror to the canonical module and asserts the policy structure; e2e asserts the delivered headers on both a static route and `/contact/`.
+
 ### Still to implement
 
-- Security headers and the Content Security Policy, which are deployment configuration (Gates 5–6). The CSP must allow `challenges.cloudflare.com` for `script-src` and `frame-src` on `/contact/` (D-015).
-- Platform-level rate limiting on the Cloudflare account (a Workers rate-limit binding is the Gate 5 candidate; the account does not exist yet).
+- Platform-level rate limiting on the Cloudflare account (a Workers rate-limit binding). **Planned at Gate 5** in `TRL_RATE_LIMITING.md`: binding shape, key (`cf-connecting-ip`), limit (`10 / 10s`), enforcement order (first, before honeypot), the generic user-facing 429-turned-503 pattern, and the fail-open-on-absent/degraded-binding posture are all fixed; two account-scoped values (the `namespace_id`, and provisioning, which happens on first deploy) wait for the founder's Cloudflare account, so nothing fabricated is committed to `wrangler.jsonc` yet.
+- Framing protection (`X-Frame-Options` / CSP `frame-ancestors`) and HSTS, held for the deployment gate as platform-level rules (D-018 note).
 - Manual verification of real email delivery in a deployed preview before launch.
 
 ## Required controls for implementation
@@ -49,7 +56,7 @@ The site and the contact endpoint exist in the repository; no deployment exists.
 
 - Server-side validation in the single form route (`/contact/`, D-014); client-side validation is an enhancement only.
 - Cloudflare Turnstile plus a honeypot on the form, with platform-level abuse protection on the Cloudflare account (account-level protection: deployment gate).
-- Security headers (including a deliberate Content Security Policy) via deployment configuration; Astro's built-in CSP support is evaluated at Gate 5.
+- Security headers (including a deliberate Content Security Policy) — resolved at Gate 5 (D-018): dual-write via `public/_headers` for static responses and `src/middleware.ts` for Worker responses, both pinned to `src/lib/security.ts`.
 - Secrets only as encrypted environment variables in the hosting platform — never in the repository, bundles, or logs.
 - Generic user-facing errors; no stack traces or internal details in responses.
 - A committed lockfile with automated dependency and vulnerability checks in CI.
