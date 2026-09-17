@@ -79,6 +79,11 @@ const valueMatchesOption = options.some((option) => option.value === value);
   }
 
   {
+    /* A textarea's value is literally everything between its tags, so {value}
+       must sit flush against them. Any indentation or newline there becomes
+       part of the value: it breaks "preserve valid user input" (the visitor's
+       text would return indented after a failed POST) and it means a
+       brand-new form is not actually empty. */
     type === 'textarea' ? (
       <textarea
         class="field__control"
@@ -91,9 +96,7 @@ const valueMatchesOption = options.some((option) => option.value === value);
         placeholder={placeholder}
         aria-describedby={describedBy || undefined}
         aria-invalid={invalid ? 'true' : undefined}
-      >
-        {value}
-      </textarea>
+      >{value}</textarea>
     ) : type === 'select' ? (
       <select
         class="field__control"
