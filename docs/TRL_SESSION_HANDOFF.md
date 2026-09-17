@@ -33,7 +33,7 @@ Active gate for the next session: **Gate 4 — Business Flow**.
 
 ## Known issues and risks
 
-- **The Playwright suite has not been executed.** Browser binaries could not be downloaded in the authoring sandbox (only the npm registry was reachable), so the e2e job has never run. The suite is written and wired into CI; the first CI run must be checked and any failures fixed before Gate 4 work begins. Static axe-core checks over the build output run in the unit suite as interim cover, but they cannot verify rendered contrast, focus visibility, reflow, or keyboard behaviour.
+- The Playwright suite could not be executed in the authoring sandbox (browser binaries were undownloadable; only the npm registry was reachable), so it was first run on CI. That run found a real defect the static checks could not: a standalone "Compare the offers in full" link measured under the 24px minimum target size. It was fixed, and the target-size test was rewritten to encode the WCAG 2.5.8 inline-text exception explicitly and to assert the 44px design-system floor on standalone controls. **Local Playwright runs remain impossible in this environment; CI is the only place the e2e suite executes.**
 - No manual keyboard, zoom, screen-reader, or real-device pass has been performed. Automated checks do not replace this, and it remains required before launch.
 - Page copy was written to be truthful and consistent with the approved brief, but it has not been founder-reviewed. The service descriptions, AI solution catalogue, offer deliverables, and operating principles are all plausible descriptions of intended work rather than founder-dictated text — **the founder should read and correct them.**
 - The Privacy and Terms pages are drafts describing current practice, labelled as such and set to `noindex`. They are not reviewed legal text.
@@ -57,14 +57,15 @@ Active gate for the next session: **Gate 4 — Business Flow**.
 - `npm run test:unit`: 161 tests passing across 3 files, including axe-core structural checks on every built page.
 - `npm audit`: 0 vulnerabilities, production and full trees.
 - Every contrast ratio documented in `TRL_DESIGN_SYSTEM.md` recomputed from the token values; three previously estimated figures were corrected and one failing pairing was fixed (D-012).
-- `npm run test:e2e`: **not executed** — see the risk above.
+- `npm run test:e2e`: executed on CI. First run: 62 passed, 2 failed (target size); fixed, and re-verified on CI.
 - No accounts, credentials, DNS changes, deployments, or generated imagery were created.
 
 ## Git
 
 - Branch: `arena/01a0afa6-trl-service`
-- Commit: `feat: build gate 3 core website`
+- Commits: `feat: build gate 3 core website`, `fix: meet minimum target size on standalone links`
+- Pull request: [#4 — Gate 3: build the core website](https://github.com/therightlifestyle/TRL-SERVICE/pull/4)
 
 ## NEXT SINGLE ACTION
 
-Check the first CI run on the Gate 3 pull request, fix any failure in the Playwright end-to-end job (which has never executed locally), and only then begin Gate 4 by implementing the contact endpoint.
+Begin Gate 4 by implementing the contact endpoint: server-side validation, honeypot, Turnstile verification, Resend delivery to the approved address, and generic error responses — then enable the form and replace the disabled-state assertions in both test suites with submission, error-summary, and success-state coverage.

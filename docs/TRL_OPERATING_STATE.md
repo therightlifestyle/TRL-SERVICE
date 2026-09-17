@@ -42,7 +42,7 @@ _Last updated: 2026-09-17_
 | Core routes render with truthful content | Met — nine routes; approved prices and contact details only; no fabricated proof |
 | Semantic structure, metadata, canonical, robots, sitemap | Met — one h1 per page, ordered headings, landmarks, per-page title/description, canonical URLs, JSON-LD limited to approved facts, robots.txt, sitemap excluding noindex drafts |
 | Typecheck, build, and unit checks pass | Met — `astro check` 0 errors; build 9 pages; 155 unit tests pass |
-| Applicable end-to-end checks | Partially met in this environment — the Playwright suite is written and wired into CI, but browser binaries cannot be downloaded in the authoring sandbox. Static axe-core checks run locally in the unit suite as interim cover. **First CI run must confirm the e2e job passes.** |
+| Applicable end-to-end checks | Met — the Playwright suite runs on CI across desktop and mobile projects. Its first run caught an undersized standalone link, which was fixed. Browser binaries cannot be downloaded in the authoring sandbox, so CI is the only place this suite executes. |
 
 ## Gate 4 exit criteria
 

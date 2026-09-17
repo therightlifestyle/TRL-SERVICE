@@ -218,9 +218,17 @@ import {
     max-width: var(--measure-body);
   }
 
+  /* A standalone navigational link, so it carries a full target area rather
+     than relying on the WCAG 2.5.8 inline exception. */
   .section__footnote {
     margin-block-start: var(--space-8);
     font-weight: 600;
+  }
+
+  .section__footnote a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
   }
 
   .cta__heading {

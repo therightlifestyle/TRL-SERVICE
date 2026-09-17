@@ -39,4 +39,5 @@
 - Corrected three contrast values in `TRL_DESIGN_SYSTEM.md` that had been estimated rather than computed, and recomputed the whole table.
 - Self-hosted the Newsreader and Manrope latin WOFF2 subsets with their SIL Open Font License files; no third-party runtime font request is made.
 - Advanced the operating state, execution plan, architecture, README, and handoff to Gate 4.
+- Fixed a minimum-target-size defect on the home page's standalone "Compare the offers in full" link, found by the Playwright suite's first CI run, and rewrote the target-size test to encode the WCAG 2.5.8 inline-text exception and assert the 44px design floor on standalone controls.
 - No accounts, credentials, DNS changes, deployments, payment integrations, or generated imagery were created.
