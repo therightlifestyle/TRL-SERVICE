@@ -25,13 +25,16 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 - Validated the system against the premium, minimal, precise, trustworthy TRL positioning.
 - Founder confirmed the direction: quiet authority, light-first, text-only wordmark, abstract systems graphics (D-009).
 
-### Gate 3 — Core Website — next
+### Gate 3 — Core Website — complete (2026-09-17)
 
-- Build homepage, company/about context, services, offers/pricing, AI solutions, contact, and appropriate trust/legal content.
-- Add semantic structure, metadata, canonical strategy, robots/sitemap as appropriate.
-- Avoid fake proof and inactive controls.
+- Scaffolded Astro 7.3.3 with TypeScript, a committed lockfile, and no CSS or animation framework.
+- Implemented the design token layer and the accessible layout and component primitives from `TRL_DESIGN_SYSTEM.md`.
+- Built Home, Services, AI Solutions, Offers, About, Contact, Privacy, Terms, and a 404 page with truthful content and approved pricing and contact details only.
+- Added semantic structure, per-page metadata, canonical URLs, JSON-LD limited to approved facts, robots.txt, and a sitemap that excludes the noindex legal drafts.
+- Established GitHub Actions CI: typecheck, build, unit and static accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit.
+- Rendered no fake proof and no inactive controls: the contact form is visibly and semantically disabled with an explanatory notice until its Gate 4 endpoint exists.
 
-### Gate 4 — Business Flow
+### Gate 4 — Business Flow — next
 
 - Implement inquiry capture and clear service selection.
 - Add validation, success/error states, and a payment-ready path without choosing a provider prematurely.
@@ -55,4 +58,4 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-Begin Gate 3 — Core Website: scaffold the smallest Astro + TypeScript project, pin and review the dependency lockfile, establish CI, implement the design tokens and base accessible layout/components, then build the approved core routes with truthful content and SEO foundations. The live contact submission workflow remains Gate 4 work.
+Begin Gate 4 — Business Flow: confirm the first CI run is green, then implement the contact endpoint (server-side validation, honeypot, Turnstile, Resend delivery to the approved address, generic errors), enable the contact form with accessible error summary and success states, verify the provider's free-tier sending restrictions, and document the qualification-to-repeat workflow.

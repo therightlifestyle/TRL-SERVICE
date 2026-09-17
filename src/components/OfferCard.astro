@@ -1,0 +1,139 @@
+---
+import Button from './Button.astro';
+import { mailtoLink, whatsappLink, type Offer } from '../lib/site';
+
+interface Props {
+  offer: Offer;
+  headingLevel?: 2 | 3;
+}
+
+const { offer, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as 'h2' | 'h3';
+/*
+ * Gate 3 has no server endpoint yet (the inquiry form is Gate 4 work), so the
+ * offer actions use the two channels that genuinely work today: a WhatsApp deep
+ * link naming the offer (journey J3) and an email with the offer in the subject.
+ * No control is rendered that does not do what it says.
+ */
+const whatsappHref = whatsappLink(
+  `Hello TRL, I am interested in the ${offer.name} (${offer.price}). Here is what I need help with: `,
+);
+const emailHref = mailtoLink(`Enquiry — ${offer.name}`);
+---
+
+<article class="offer" id={offer.id}>
+  <header class="offer__header">
+    <Heading class="offer__name">{offer.name}</Heading>
+    <p class="offer__price tabular">
+      {offer.price}
+      {offer.priceNote && <span class="offer__price-note"> / {offer.priceNote}</span>}
+    </p>
+    <p class="offer__fit text-small muted">{offer.fit}</p>
+  </header>
+
+  <p class="offer__summary">{offer.summary}</p>
+
+  <div class="offer__group">
+    <h4 class="offer__group-title">What you get</h4>
+    <ul class="offer__list">
+      {offer.deliverables.map((item) => <li>{item}</li>)}
+    </ul>
+  </div>
+
+  <div class="offer__group">
+    <h4 class="offer__group-title">Included</h4>
+    <ul class="offer__list">
+      {offer.includes.map((item) => <li>{item}</li>)}
+    </ul>
+  </div>
+
+  <div class="offer__group">
+    <h4 class="offer__group-title">Not included</h4>
+    <ul class="offer__list offer__list--excluded">
+      {offer.excludes.map((item) => <li>{item}</li>)}
+    </ul>
+  </div>
+
+  <div class="offer__action">
+    <Button href={whatsappHref} fullWidthOnMobile>
+      Enquire on WhatsApp about {offer.name}
+    </Button>
+    <p class="text-small">
+      Prefer email? <a href={emailHref}>Send an enquiry about {offer.name}</a>.
+    </p>
+  </div>
+
+  <p class="text-small muted offer__next">
+    Next step: we confirm fit and scope in writing before any payment is requested.
+  </p>
+</article>
+
+<style>
+  .offer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    height: 100%;
+    padding: var(--space-8) var(--space-6);
+    background-color: var(--color-surface);
+    border: var(--border-default);
+    border-block-start: 3px solid var(--color-action);
+    border-radius: var(--radius-md);
+  }
+
+  .offer__header > * + * {
+    margin-block-start: var(--space-2);
+  }
+
+  .offer__name {
+    max-width: 20ch;
+  }
+
+  .offer__price {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .offer__price-note {
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .offer__group-title {
+    margin-block-end: var(--space-2);
+    font-size: var(--text-label);
+    font-weight: 700;
+    line-height: var(--leading-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .offer__list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+  }
+
+  .offer__list li {
+    max-width: var(--measure-body);
+  }
+
+  .offer__list--excluded {
+    color: var(--color-text-muted);
+  }
+
+  .offer__action {
+    display: grid;
+    gap: var(--space-3);
+    margin-block-start: auto;
+  }
+
+  .offer__next {
+    max-width: 38ch;
+  }
+</style>

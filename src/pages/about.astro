@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import PageIntro from '../components/PageIntro.astro';
+import SectionIntro from '../components/SectionIntro.astro';
+import StepList from '../components/StepList.astro';
+import { contact, principles, site } from '../lib/site';
+---
+
+<BaseLayout
+  title="About"
+  description="TRL (The Right Lifestyle) is a new firm founded by Rashid Muhammad Amir, building AI automation and business operating systems for small business owners."
+  whatsappMessage="Hello TRL, I read your about page and would like to talk about: "
+>
+  <PageIntro
+    eyebrow="About"
+    heading="A new firm, saying so plainly"
+    lead={`${site.name} — ${site.legalName} — is founded by ${site.founder}. It is early, and this page does not pretend otherwise.`}
+  />
+
+  <section class="section" aria-labelledby="what-heading">
+    <div class="container container--reading stack-6">
+      <h2 id="what-heading">What TRL is</h2>
+      <p>
+        TRL builds business systems: the automations, assistants, documentation, and
+        operating structure that let a small business run without every task passing
+        through the owner. The work is practical — process mapping, building, writing
+        things down, and handing over.
+      </p>
+      <p>
+        The long-term intention is a wider technology ecosystem. That is a direction,
+        not a product you can buy today, and nothing on this site depends on it.
+      </p>
+
+      <h2>What TRL is not</h2>
+      <ul class="list">
+        <li>Not an agency with a portfolio of past clients to show you.</li>
+        <li>Not a software vendor — we build in tools you own.</li>
+        <li>Not a certification, accreditation, or partnership holder. We hold none.</li>
+        <li>Not a team. Engagements are delivered by the founder.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="principles-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="Operating principles"
+        heading="How we work, in place of proof we have not earned"
+        id="principles-heading"
+        lead="These are commitments you can hold us to, not claims about results we have not produced yet."
+      />
+      <div class="principles__body">
+        <StepList steps={principles} numbered={false} />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="reach-heading">
+    <div class="container container--reading stack-6">
+      <h2 id="reach-heading">Reaching the founder</h2>
+      <p>
+        Messages go to the founder directly, not to a sales queue. Email
+        <a href={`mailto:${contact.email}`}>{contact.email}</a> or WhatsApp
+        {contact.whatsappNumber}. We do not publish a guaranteed response time, because
+        we are not yet in a position to promise one honestly.
+      </p>
+      <p>
+        <Button href="/contact/" fullWidthOnMobile>Contact TRL</Button>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+    max-width: var(--measure-body);
+  }
+
+  .principles__body {
+    margin-block-start: var(--space-12);
+  }
+</style>

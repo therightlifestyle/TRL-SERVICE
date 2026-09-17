@@ -1,0 +1,33 @@
+---
+/** Compact interior-page introduction: eyebrow, the single h1, and a short lead. */
+interface Props {
+  eyebrow?: string;
+  heading: string;
+  lead?: string;
+}
+
+const { eyebrow, heading, lead } = Astro.props;
+---
+
+<div class="page-intro">
+  <div class="container">
+    {eyebrow && <span class="eyebrow">{eyebrow}</span>}
+    <h1>{heading}</h1>
+    {lead && <p class="lead page-intro__lead">{lead}</p>}
+    <slot />
+  </div>
+</div>
+
+<style>
+  .page-intro {
+    padding-block: clamp(3rem, 7vw, 6rem) clamp(2rem, 4vw, 3rem);
+  }
+
+  .page-intro h1 {
+    max-width: 20ch;
+  }
+
+  .page-intro__lead {
+    margin-block-start: var(--space-6);
+  }
+</style>

@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import PageIntro from '../components/PageIntro.astro';
+import SectionIntro from '../components/SectionIntro.astro';
+import StepList from '../components/StepList.astro';
+import { engagementSteps, serviceAreas } from '../lib/site';
+---
+
+<BaseLayout
+  title="Services"
+  description="Workflow automation, custom AI assistants, business process improvement, and founder operating systems — described by what the work actually involves."
+  whatsappMessage="Hello TRL, I read your services page and would like to discuss: "
+>
+  <PageIntro
+    eyebrow="Services"
+    heading="Four areas of work, one method"
+    lead="Every engagement starts the same way: we look at how the work moves today before deciding what, if anything, should be automated."
+  />
+
+  <section class="section" aria-labelledby="areas-heading">
+    <div class="container">
+      <h2 id="areas-heading" class="visually-hidden">Service areas</h2>
+      <div class="areas">
+        {
+          serviceAreas.map((area) => (
+            <article class="area" id={area.id}>
+              <h3 class="area__title">{area.title}</h3>
+              <div class="area__body">
+                <p class="area__problem">{area.problem}</p>
+                <p>{area.capability}</p>
+                <h4 class="area__examples-title">Typical work</h4>
+                <ul class="list">
+                  {area.examples.map((example) => (
+                    <li>{example}</li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="method-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="Method"
+        heading="How an engagement runs"
+        id="method-heading"
+        lead="The sequence is the same whether you start with the Micro Audit or the full Founder OS engagement."
+      />
+      <div class="method__body">
+        <StepList steps={engagementSteps} />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="boundaries-heading">
+    <div class="container container--reading stack-6">
+      <h2 id="boundaries-heading">What we do not do</h2>
+      <ul class="list">
+        <li>We do not resell software licences or take commission on your tools.</li>
+        <li>
+          We do not replace staff decisions with an unattended model. Assistants draft
+          and prepare; people approve.
+        </li>
+        <li>
+          We do not automate a broken process. If the sequence is wrong, we fix the
+          sequence first.
+        </li>
+        <li>We do not give legal, financial, tax, or hiring advice.</li>
+      </ul>
+      <p>
+        <Button href="/offers/" fullWidthOnMobile>See what an engagement costs</Button>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .areas {
+    display: grid;
+    gap: var(--space-16);
+  }
+
+  .area {
+    display: grid;
+    gap: var(--space-4);
+    padding-block-start: var(--space-8);
+    border-block-start: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  }
+
+  .area__title {
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    font-weight: 500;
+    line-height: var(--leading-h2);
+    letter-spacing: -0.025em;
+  }
+
+  .area__body > * + * {
+    margin-block-start: var(--space-4);
+  }
+
+  .area__problem {
+    font-size: var(--text-lead);
+    line-height: var(--leading-lead);
+    color: var(--color-text-muted);
+  }
+
+  .area__examples-title {
+    font-size: var(--text-label);
+    font-weight: 700;
+    line-height: var(--leading-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+    max-width: var(--measure-body);
+  }
+
+  .method__body {
+    margin-block-start: var(--space-12);
+  }
+
+  @media (min-width: 64rem) {
+    .area {
+      grid-template-columns: 5fr 7fr;
+      gap: var(--space-12);
+      align-items: start;
+    }
+  }
+</style>

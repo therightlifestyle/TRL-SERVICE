@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import WhatsAppAffordance from '../components/WhatsAppAffordance.astro';
+import { contact, site } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Set to false on legal/utility pages that should not be indexed as entry points. */
+  noindex?: boolean;
+  whatsappMessage?: string;
+}
+
+const { title, description, noindex = false, whatsappMessage } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? site.defaultOrigin);
+const pageTitle = `${title} — ${site.name} · ${site.legalName}`;
+
+/*
+ * JSON-LD is limited to facts approved in docs/TRL_MASTER_CONTEXT.md (D-003).
+ * No ratings, review counts, founding claims, addresses, or credentials.
+ */
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: site.legalName,
+  alternateName: site.name,
+  url: canonical.origin + '/',
+  email: contact.email,
+  telephone: contact.whatsappNumber,
+  founder: { '@type': 'Person', name: site.founder },
+  description:
+    'TRL builds AI automation, custom AI assistants, and business operating systems for owners of small businesses.',
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#F7F4EC" />
+
+    <link
+      rel="preload"
+      href="/fonts/manrope-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={`${site.name} — ${site.legalName}`} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta name="twitter:card" content="summary" />
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify(organizationSchema)}
+      is:inline
+    />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <SiteHeader />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter />
+    <WhatsAppAffordance message={whatsappMessage} />
+  </body>
+</html>
+
+<style is:global>
+  .skip-link {
+    position: absolute;
+    z-index: 50;
+    inset-inline-start: var(--space-4);
+    inset-block-start: var(--space-4);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-ink);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  main:focus {
+    outline: none;
+  }
+
+</style>

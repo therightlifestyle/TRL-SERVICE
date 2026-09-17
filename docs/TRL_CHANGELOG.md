@@ -24,3 +24,20 @@
 - Recorded the visual direction as D-009 and advanced the operating state, execution plan, README, and handoff to Gate 3.
 - Independently calculated the documented contrast ratios for approved semantic color pairings.
 - No application code, font binaries, generated images, dependencies, accounts, credentials, or infrastructure were created.
+
+## 2026-09-17 — Gate 3: core website
+
+- Scaffolded the Astro 7.3.3 + TypeScript project with a committed, reviewed `package-lock.json`; `npm audit` reports 0 vulnerabilities.
+- Implemented the design token layer (`src/styles/tokens.css`) and the global reset, typography, focus, layout, motion, and forced-colors rules (`src/styles/global.css`). No CSS framework or animation library.
+- Built the accessible component set: skip link, header/navigation, text wordmark, button, service card, offer card, section and page introductions, step list, notice, form field, footer, persistent WhatsApp affordance, and abstract systems graphics.
+- Built all nine routes — Home, Services, AI Solutions, Offers, About, Contact, Privacy, Terms, and 404 — with truthful content and approved prices and contact details only.
+- Centralised every founder-approved fact in `src/lib/site.ts` and pinned it with content-invariant tests, so an unapproved price or contact change fails CI.
+- Added SEO foundations: per-page titles and descriptions, canonical URLs, Open Graph tags, JSON-LD organization data limited to approved facts, robots.txt, and a sitemap that excludes the noindex legal drafts.
+- Established GitHub Actions CI with three jobs: typecheck/build/unit, Playwright end-to-end, and a dependency audit.
+- Added 161 unit tests (content invariants, token values, recomputed contrast ratios, and axe-core structural checks over the build output) and a Playwright suite covering navigation, content, keyboard and skip-link behaviour, 320px reflow, target size, reduced motion, no-CSS resilience, and axe runs on every route.
+- Recorded D-010 (zero client JavaScript), D-011 (contact form ships disabled until its endpoint exists), D-012 (border token darkened to `#6F7F89` for non-text contrast), and D-013 (legal pages ship as labelled noindex drafts).
+- Corrected three contrast values in `TRL_DESIGN_SYSTEM.md` that had been estimated rather than computed, and recomputed the whole table.
+- Self-hosted the Newsreader and Manrope latin WOFF2 subsets with their SIL Open Font License files; no third-party runtime font request is made.
+- Advanced the operating state, execution plan, architecture, README, and handoff to Gate 4.
+- Fixed a minimum-target-size defect on the home page's standalone "Compare the offers in full" link, found by the Playwright suite's first CI run, and rewrote the target-size test to encode the WCAG 2.5.8 inline-text exception and assert the 44px design floor on standalone controls.
+- No accounts, credentials, DNS changes, deployments, payment integrations, or generated imagery were created.

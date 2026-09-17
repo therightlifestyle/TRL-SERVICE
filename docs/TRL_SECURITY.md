@@ -4,7 +4,20 @@ _Last updated: 2026-09-17._
 
 ## Current status
 
-No application or public endpoint exists yet. This is a baseline for implementation, not a claim that security controls are already deployed.
+The Gate 3 static site exists; no public endpoint and no deployment exist. The controls below marked "in place" are implemented in the repository, not verified in production — nothing has been deployed.
+
+### Implemented at Gate 3
+
+- No client JavaScript on any route, and no third-party runtime requests (fonts are self-hosted). A unit test asserts that no built page references an external asset, which keeps the future Content Security Policy tight by default.
+- No cookies, analytics, or tracking of any kind.
+- No secrets in the repository. `.env` is gitignored and `.env.example` carries names and comments only.
+- A committed lockfile installed with `npm ci` in CI, plus a dependency-audit job that fails on a high-severity advisory in production dependencies.
+- No data collection: the enquiry form is disabled and there is no endpoint, so the site currently receives no user input at all.
+
+### Still to implement
+
+- Everything in the contact-endpoint path: server-side validation, honeypot, Turnstile, rate limiting, generic error responses, and no PII in logs (Gate 4).
+- Security headers and the Content Security Policy, which are deployment configuration (Gates 5–6).
 
 ## Required controls for implementation
 

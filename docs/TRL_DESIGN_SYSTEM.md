@@ -1,6 +1,6 @@
 # TRL — Design System
 
-_Last updated: 2026-09-17 (Gate 2). The founder confirmed the visual direction in session: quiet authority, light-first presentation, a text-only wordmark, and abstract systems graphics. This document defines the implementation contract for Gate 3; no application code or visual assets exist yet._
+_Last updated: 2026-09-17 (revised during Gate 3 implementation). The founder confirmed the visual direction in session: quiet authority, light-first presentation, a text-only wordmark, and abstract systems graphics. This document is the design source of truth; the Gate 3 site implements it. One token-level accessibility correction was made during implementation and is recorded as D-012._
 
 ## Design intent
 
@@ -71,7 +71,7 @@ Typography rules:
 | `--color-action` | `#1C607A` | Primary links, controls, and active states |
 | `--color-action-hover` | `#124A60` | Hover/pressed action state |
 | `--color-accent-soft` | `#DCECF1` | Selected items and quiet information panels |
-| `--color-border` | `#7C8C96` | Interactive and meaningful non-text boundaries; never the only state cue |
+| `--color-border` | `#6F7F89` | Interactive and meaningful non-text boundaries; never the only state cue. Darkened from `#7C8C96` at Gate 3 for non-text contrast (D-012) |
 | `--color-focus` | `#176B87` | Keyboard focus ring on light surfaces |
 | `--color-focus-inverse` | `#F7F4EC` | Keyboard focus ring on ink/dark surfaces |
 | `--color-success` | `#246B4D` | Success text/icon where required |
@@ -86,17 +86,38 @@ Typography rules:
 - Success and danger states always pair color with text and, when useful, an icon.
 - No public theme toggle or dark mode is included in Phase 1.
 
-Reference contrast checks for approved pairings:
+Contrast checks for the pairings the interface actually uses. Every value below is recomputed in `tests/unit/design-tokens.test.ts`, so a palette edit that drops a pairing under its threshold fails CI.
 
-- Ink on canvas: `13.46:1`.
-- Muted text on canvas: `7.17:1`.
-- White on action: `6.99:1`.
-- Action on soft accent: `5.76:1`.
-- Border against white: `3.47:1`; border against canvas: `3.16:1`.
-- Focus on canvas: `5.48:1`; inverse focus on ink: `13.46:1`.
-- White on success: `6.39:1`; white on danger: `7.11:1`.
+Text pairings (AA threshold 4.5:1 for normal text):
 
-These values meet WCAG AA text contrast thresholds in the named pairings. Implementation tests must verify rendered states; passing token pairs does not by itself certify a complete page.
+| Pairing | Ratio |
+| --- | --- |
+| Ink on canvas | `13.46:1` |
+| Ink on white surface | `14.79:1` |
+| Muted text on canvas | `7.17:1` |
+| Action on canvas | `6.36:1` |
+| Action on soft accent | `5.76:1` |
+| White on action | `6.99:1` |
+| White on action hover | `9.66:1` |
+| Canvas on ink (dark sections) | `13.46:1` |
+| Soft accent on ink | `12.19:1` |
+| Danger on white surface | `7.11:1` |
+| Success on white surface | `6.39:1` |
+
+Non-text pairings (AA threshold 3:1 for boundaries and focus indicators):
+
+| Pairing | Ratio |
+| --- | --- |
+| Border on white surface | `4.14:1` |
+| Border on canvas | `3.77:1` |
+| Border on soft accent | `3.41:1` |
+| Border on muted surface | `3.38:1` |
+| Focus ring on canvas | `5.48:1` |
+| Focus ring on white surface | `6.02:1` |
+| Focus ring on muted surface | `4.92:1` |
+| Inverse focus ring on ink | `13.46:1` |
+
+The Gate 2 border value `#7C8C96` met 3:1 on white and canvas but reached only `2.84:1` on the muted surface, where cards and fields also sit. It was darkened to `#6F7F89` during implementation (D-012). Passing token pairs does not by itself certify a page: rendered states are additionally checked by the axe runs in both test suites.
 
 ## Spacing, shape, and depth
 
@@ -280,10 +301,32 @@ Gate 3 implementation and later verification must demonstrate:
 
 Automated checks support but do not replace a manual keyboard, zoom/reflow, reduced-motion, contrast, and screen-reader smoke test.
 
-## Gate 3 implementation notes
+## Implementation status (Gate 3)
 
-- Create design tokens as custom properties in one global token layer; components consume semantic tokens rather than repeating hex values.
-- Implement representative primitives first: type, container, button/link, header/navigation, card, offer card, form controls, notice, and footer.
-- Use no CSS framework or animation library.
+The system is implemented. Tokens live in `src/styles/tokens.css` as the single source of token values; `src/styles/global.css` holds the reset, base typography, focus treatment, layout primitives, and motion rules; component styles are scoped inside each `.astro` component. No CSS framework or animation library is used.
+
+| Specified item | Implementation |
+| --- | --- |
+| Token layer | `src/styles/tokens.css` |
+| Skip link | `src/layouts/BaseLayout.astro` — first focusable element, visible on focus |
+| Header and navigation | `src/components/SiteHeader.astro` — `aria-current="page"`, no script (D-010) |
+| Wordmark | `src/components/Wordmark.astro` — text only, accessible name "TRL — The Right Lifestyle" |
+| Buttons and links | `src/components/Button.astro` — 48px control height, hover behind `@media (hover: hover)` |
+| Section / page introduction | `SectionIntro.astro`, `PageIntro.astro` |
+| Service card | `src/components/Card.astro` |
+| Offer card | `src/components/OfferCard.astro` — staircase order, tabular prices, exclusions stated |
+| Process / principle list | `src/components/StepList.astro` |
+| Trust statement | Operating principles on the home and about pages |
+| Contact methods | `WhatsAppAffordance.astro` plus the direct-channel block on `/contact/` |
+| Form controls | `src/components/Field.astro` — visible labels, required/optional in words, wired error slot |
+| Notices | `src/components/Notice.astro` — tone carried by a word, not colour alone |
+| Footer | `src/components/SiteFooter.astro` — ink surface, full wordmark, approved channels |
+| Systems graphics | `src/components/SystemsGraphic.astro` — token colours, `aria-hidden`, no fabricated data |
+
+Deviations and implementation decisions recorded: D-010 (no client JavaScript, so no mobile menu toggle), D-011 (contact form ships disabled), D-012 (border token darkened), D-013 (legal pages ship as labelled drafts). No other deviations were made.
+
+### Standing notes for future work
+
+- Components consume semantic tokens rather than repeating hex values.
 - Keep the base document useful before fonts, CSS, or client JavaScript finish loading.
 - Treat this document as the design source of truth. Record intentional deviations rather than silently introducing one-off styles.

@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import Card from '../components/Card.astro';
+import Notice from '../components/Notice.astro';
+import PageIntro from '../components/PageIntro.astro';
+import SectionIntro from '../components/SectionIntro.astro';
+import SystemsGraphic from '../components/SystemsGraphic.astro';
+import { aiSolutions } from '../lib/site';
+---
+
+<BaseLayout
+  title="AI solutions"
+  description="The specific AI assistants and automations TRL builds: enquiry triage, internal knowledge assistants, proposal drafting, document processing, follow-up sequences, and operational reporting."
+  whatsappMessage="Hello TRL, I am interested in one of your AI solutions: "
+>
+  <PageIntro
+    eyebrow="AI solutions"
+    heading="Specific jobs, not a general-purpose chatbot"
+    lead="These are the solution types we build today. Each one is scoped to a defined job, grounded in your own material, and handed over with documentation."
+  />
+
+  <section class="section" aria-labelledby="catalog-heading">
+    <div class="container">
+      <h2 id="catalog-heading" class="visually-hidden">Solution catalogue</h2>
+      <div class="grid grid--2">
+        {
+          aiSolutions.map((solution) => (
+            <Card title={solution.title}>
+              <p>{solution.description}</p>
+              <p class="text-small muted">
+                <strong>Fit:</strong> {solution.fitFor}
+              </p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="approach-heading">
+    <div class="container grid grid--split">
+      <div>
+        <SectionIntro
+          eyebrow="How we build them"
+          heading="Grounded, bounded, and reviewable"
+          id="approach-heading"
+        />
+        <ul class="list approach__list">
+          <li>
+            <strong>Grounded.</strong> Assistants answer from your documented material,
+            not from general internet knowledge, and point to the source.
+          </li>
+          <li>
+            <strong>Bounded.</strong> Each assistant has an explicit list of what it may
+            do. Anything outside that list goes to a person.
+          </li>
+          <li>
+            <strong>Reviewable.</strong> Output that reaches a customer is drafted for
+            approval unless you decide otherwise in writing.
+          </li>
+          <li>
+            <strong>Portable.</strong> Built in accounts you own, documented, and
+            handed over so you are not dependent on us.
+          </li>
+        </ul>
+      </div>
+      <SystemsGraphic variant="grid" class="approach__graphic" />
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="limits-heading">
+    <div class="container container--reading stack-6">
+      <h2 id="limits-heading">Honest limits</h2>
+      <Notice tone="info" heading="What these systems are not">
+        <p>
+          Language models get things wrong. Every solution above is designed with a
+          review step, a defined scope, and a fallback to a person. We will not present
+          an unattended model as a replacement for judgement, and we will not claim an
+          accuracy figure we have not measured in your business.
+        </p>
+      </Notice>
+      <p>
+        There is no live assistant demo on this site. When we have one that is genuinely
+        useful rather than decorative, it will appear here.
+      </p>
+      <p>
+        <Button href="/contact/" fullWidthOnMobile>Ask about a specific solution</Button>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .list {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+    max-width: var(--measure-body);
+  }
+
+  .approach__list {
+    margin-block-start: var(--space-8);
+  }
+
+  .approach__graphic {
+    margin-block-start: var(--space-12);
+  }
+
+  @media (min-width: 64rem) {
+    .approach__graphic {
+      margin-block-start: 0;
+    }
+  }
+</style>

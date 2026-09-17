@@ -66,3 +66,36 @@
 - **Decision:** Use a quiet-authority, light-first visual system with a text-only `TRL / The Right Lifestyle` wordmark and purpose-built abstract systems graphics.
 - **Why:** This direction supports the premium, minimal, precise, trustworthy positioning without presenting TRL as a loud AI novelty brand or inventing an unapproved identity symbol.
 - **Consequence:** Gate 3 implements the Newsreader/Manrope typography direction, warm-ivory/deep-ink/restrained-blue semantic palette, accessible components, and interaction rules defined in `TRL_DESIGN_SYSTEM.md`. Do not introduce a logo symbol, dark-first theme, stock/synthetic business photography, fabricated interfaces/data, neon effects, or AI visual clichés without founder approval. Font files are self-hosted with license files and no third-party runtime font request.
+
+## D-010 — The Gate 3 site ships with zero client JavaScript
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 3), consistent with D-005
+- **Decision:** No route ships a client script bundle. The primary navigation is a plain list that fits at every tested width, so no mobile menu toggle was built; the only inline script is the JSON-LD data block.
+- **Why:** D-005 chose Astro precisely for a near-zero JavaScript surface. A menu toggle would have added focus management, an Escape handler, and a no-JavaScript fallback to maintain, for six navigation items that already fit.
+- **Consequence:** If navigation grows past what fits comfortably, the progressively enhanced menu specified in `TRL_DESIGN_SYSTEM.md` is the documented way to add it. Any future client script must justify itself against this baseline.
+
+## D-011 — The contact form ships disabled until its endpoint exists
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 3)
+- **Decision:** `/contact/` renders the approved enquiry structure inside a `disabled` fieldset, above it a notice stating that submissions are not being accepted, and above that the working email and WhatsApp channels.
+- **Why:** The design system forbids rendering inactive controls as if they work, and the endpoint is Gate 4 work. The alternatives — hiding the form, or shipping a form that silently discards input — were rejected as less honest.
+- **Consequence:** Gate 4 removes the `disabled` attribute and the notice as part of wiring the endpoint, and adds the accessible error-summary, per-field error, and success-state behaviour. The e2e and unit suites currently assert the disabled state, so those assertions must be replaced rather than deleted.
+
+## D-012 — Border token darkened to #6F7F89 for non-text contrast
+
+- **Date:** 2026-09-17
+- **Status:** Token-level accessibility correction (Gate 3)
+- **Decision:** `--color-border` changes from the Gate 2 value `#7C8C96` to `#6F7F89`.
+- **Why:** Implementation testing recomputed every pairing actually used, not only the ones listed at Gate 2. `#7C8C96` on the muted surface `#ECE8DE` gives 2.84:1, below the 3:1 WCAG 2.2 non-text threshold, and the same failure applied on the soft-accent surface. `#6F7F89` gives 4.14:1 on white, 3.77:1 on canvas, 3.41:1 on soft accent, and 3.38:1 on the muted surface.
+- **Why this needed no founder approval:** `TRL_DESIGN_SYSTEM.md` states that token-level accessibility corrections preserving the four confirmed directions do not require confirmation. The change is a small darkening within the same desaturated blue-grey and does not alter the quiet-authority, light-first, text-wordmark, or abstract-graphics direction.
+- **Consequence:** `TRL_DESIGN_SYSTEM.md` is updated with the new value and the recalculated ratios. `tests/unit/design-tokens.test.ts` now asserts every pairing the interface actually uses against its threshold, so this class of gap fails in CI rather than at review.
+
+## D-013 — Legal pages ship as labelled, noindex drafts
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 3); final text remains a founder/legal decision
+- **Decision:** `/privacy/` and `/terms/` publish a truthful description of current practice, each opening with a visible "Draft — pending legal review" notice stating that no effective date is set. Both carry `noindex, follow` and are excluded from the sitemap.
+- **Why:** D-008 includes the legal pages in scope, and the site needs a truthful privacy description because visitors send personal data by email. Inventing finished policy text, or shipping empty placeholders labelled as policy, were both rejected.
+- **Consequence:** The drafts state only what is verifiably true today — no analytics, no tracking cookies, self-hosted fonts, no database, inbox as system of record. Approved legal text replaces them before launch, and the `noindex` directive and sitemap exclusion are removed at that point.

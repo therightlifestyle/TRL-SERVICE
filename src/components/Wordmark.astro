@@ -1,0 +1,56 @@
+---
+/**
+ * Text-only wordmark (D-009). No symbol, monogram, effect, or animation.
+ * `compact` drops the descriptor where the full lockup cannot fit.
+ */
+interface Props {
+  compact?: boolean;
+  as?: 'link' | 'text';
+}
+
+const { compact = false, as = 'link' } = Astro.props;
+const Tag = as === 'link' ? 'a' : 'span';
+---
+
+<Tag
+  class:list={['wordmark', compact && 'wordmark--compact']}
+  {...as === 'link'
+    ? { href: '/', 'aria-label': 'TRL — The Right Lifestyle', rel: 'home' }
+    : {}}
+>
+  <span class="wordmark__primary">TRL</span>
+  {!compact && <span class="wordmark__descriptor">The Right Lifestyle</span>}
+</Tag>
+
+<style>
+  .wordmark {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .wordmark__primary {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.08em;
+  }
+
+  .wordmark__descriptor {
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: var(--leading-label);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  :global(.section--ink) .wordmark__descriptor,
+  :global(.on-ink) .wordmark__descriptor {
+    color: var(--color-accent-soft);
+  }
+</style>

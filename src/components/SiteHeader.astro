@@ -1,0 +1,97 @@
+---
+import Wordmark from './Wordmark.astro';
+import { navigation } from '../lib/site';
+
+const currentPath = Astro.url.pathname;
+const isCurrent = (href: string) =>
+  href === '/' ? currentPath === '/' : currentPath.startsWith(href);
+---
+
+<header class="site-header">
+  <div class="container container--wide site-header__inner">
+    <Wordmark />
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul class="site-nav__list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class:list={['site-nav__link', isCurrent(item.href) && 'is-current']}
+                aria-current={isCurrent(item.href) ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background-color: var(--color-canvas);
+    border-block-end: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+  }
+
+  .site-header__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-4);
+  }
+
+  .site-nav__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink);
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color var(--duration-default) var(--ease-default);
+  }
+
+  @media (hover: hover) {
+    .site-nav__link:hover {
+      color: var(--color-action-hover);
+      text-decoration: underline;
+      text-underline-offset: 0.35em;
+    }
+  }
+
+  /* The current page is marked in text/semantics (aria-current) as well as colour. */
+  .site-nav__link.is-current {
+    color: var(--color-action);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.35em;
+  }
+
+  @media (min-width: 40rem) {
+    .site-header__inner {
+      padding-block: var(--space-6);
+    }
+
+    .site-nav__list {
+      gap: var(--space-2);
+    }
+  }
+</style>

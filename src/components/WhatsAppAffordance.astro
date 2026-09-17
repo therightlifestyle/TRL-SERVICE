@@ -1,0 +1,58 @@
+---
+import { contact, whatsappLink } from '../lib/site';
+
+interface Props {
+  message?: string;
+}
+
+const { message = 'Hello TRL, I would like to ask about your services.' } = Astro.props;
+---
+
+<a class="wa" href={whatsappLink(message)}>
+  <span aria-hidden="true" class="wa__glyph">↗</span>
+  <span class="wa__label">WhatsApp {contact.whatsappNumber}</span>
+</a>
+
+<style>
+  /*
+   * Persistent contact affordance. It has a visible text label, respects safe
+   * area insets, and never pulses or animates for attention.
+   */
+  .wa {
+    position: fixed;
+    z-index: 20;
+    inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    inset-inline-end: calc(var(--space-4) + env(safe-area-inset-right, 0px));
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--target-min);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-ink);
+    border: 1px solid var(--color-ink);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-low);
+    color: var(--color-canvas);
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--duration-default) var(--ease-default);
+  }
+
+  .wa:focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+  }
+
+  @media (hover: hover) {
+    .wa:hover {
+      background-color: var(--color-action-hover);
+      border-color: var(--color-action-hover);
+    }
+  }
+
+  .wa__glyph {
+    font-size: 1rem;
+    line-height: 1;
+  }
+</style>

@@ -1,0 +1,172 @@
+---
+/**
+ * Form field primitive.
+ *
+ * Labels are always visible above the control, required/optional status is stated
+ * in words, instructions are connected with aria-describedby, and the error slot
+ * is pre-wired so an invalid state never depends on colour alone.
+ */
+interface Props {
+  id: string;
+  name: string;
+  label: string;
+  type?: 'text' | 'email' | 'tel' | 'textarea' | 'select';
+  required?: boolean;
+  hint?: string;
+  placeholder?: string;
+  autocomplete?: string;
+  maxlength?: number;
+  minlength?: number;
+  rows?: number;
+  options?: readonly { value: string; label: string }[];
+}
+
+const {
+  id,
+  name,
+  label,
+  type = 'text',
+  required = false,
+  hint,
+  placeholder,
+  autocomplete,
+  maxlength,
+  minlength,
+  rows = 6,
+  options = [],
+} = Astro.props;
+
+const hintId = hint ? `${id}-hint` : undefined;
+const errorId = `${id}-error`;
+const describedBy = [hintId, errorId].filter(Boolean).join(' ');
+---
+
+<div class="field" data-field={id}>
+  <label class="field__label" for={id}>
+    {label}
+    <span class="field__status">{required ? 'Required' : 'Optional'}</span>
+  </label>
+
+  {
+    hint && (
+      <p class="field__hint text-small" id={hintId}>
+        {hint}
+      </p>
+    )
+  }
+
+  {
+    type === 'textarea' ? (
+      <textarea
+        class="field__control"
+        id={id}
+        name={name}
+        rows={rows}
+        required={required}
+        maxlength={maxlength}
+        minlength={minlength}
+        placeholder={placeholder}
+        aria-describedby={describedBy}
+      />
+    ) : type === 'select' ? (
+      <select
+        class="field__control"
+        id={id}
+        name={name}
+        required={required}
+        aria-describedby={describedBy}
+      >
+        {options.map((option) => (
+          <option value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    ) : (
+      <input
+        class="field__control"
+        id={id}
+        name={name}
+        type={type}
+        required={required}
+        maxlength={maxlength}
+        minlength={minlength}
+        placeholder={placeholder}
+        autocomplete={autocomplete}
+        aria-describedby={describedBy}
+      />
+    )
+  }
+
+  <p class="field__error" id={errorId} hidden>
+    <span class="field__error-word">Error:</span>
+    <span class="field__error-text"></span>
+  </p>
+</div>
+
+<style>
+  .field {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .field__label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-weight: 600;
+  }
+
+  .field__status {
+    font-size: var(--text-small);
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .field__hint {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .field__control {
+    width: 100%;
+    min-height: var(--control-height);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-body);
+    color: var(--color-ink);
+    transition: border-color var(--duration-default) var(--ease-default);
+  }
+
+  textarea.field__control {
+    min-height: 10rem;
+    resize: vertical;
+  }
+
+  .field__control::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .field__control:focus-visible {
+    border-color: var(--color-focus);
+  }
+
+  /* Invalid state: danger colour, a heavier boundary, and the word "Error". */
+  .field__control[aria-invalid='true'] {
+    border-width: 2px;
+    border-color: var(--color-danger);
+  }
+
+  .field__error {
+    margin: 0;
+    font-size: var(--text-small);
+    font-weight: 600;
+    color: var(--color-danger);
+  }
+
+  .field__error-word {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+</style>

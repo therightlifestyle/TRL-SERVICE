@@ -1,0 +1,66 @@
+---
+interface Props {
+  title: string;
+  /** Optional navigation action. Omitted rather than rendered inactive. */
+  href?: string;
+  linkLabel?: string;
+  headingLevel?: 3 | 4;
+}
+
+const { title, href, linkLabel, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as 'h3' | 'h4';
+---
+
+<article class="card">
+  <Heading class="card__title">{title}</Heading>
+  <div class="card__body">
+    <slot />
+  </div>
+  {
+    href && linkLabel && (
+      <p class="card__action">
+        <a href={href}>
+          {linkLabel}
+          <span aria-hidden="true"> →</span>
+        </a>
+      </p>
+    )
+  }
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    height: 100%;
+    padding: var(--space-6);
+    background-color: var(--color-surface);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+  }
+
+  .card__title {
+    max-width: 24ch;
+  }
+
+  .card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    flex: 1 1 auto;
+  }
+
+  .card__action {
+    margin-block-start: auto;
+  }
+
+  .card__action a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>
