@@ -1,10 +1,14 @@
-# TRL — Rate limiting for the contact endpoint (Gate 5)
+# TRL — Rate limiting for the contact endpoint (Gate 5 implementation, Gate 6 deployment procedure)
 
 _Last updated: 2026-09-17. Status: **implemented, awaiting one founder value**
 — the enforcing code, its fail-open contract, and its tests are committed and
 green; only the account-scoped `namespace_id` and the `ratelimits` block in
 `wrangler.jsonc` (commented out, ready to uncomment) wait on the Cloudflare
-account._
+account. The full deployment procedure — namespace provisioning, the
+one-line config edit, the burst check, and the failure posture — is now in
+`docs/TRL_DEPLOYMENT.md` ("Rate-limit namespace configuration") as part of
+Gate 6; this document remains the design source of truth and the
+contract-pinning record._
 
 ## What changed since this was a plan
 
@@ -224,6 +228,13 @@ Still required when the account exists:
 
 ## Deployment gate: founder actions
 
+The repository-side work for this gate is done. `wrangler.jsonc` carries the
+`ratelimits` block commented out with a placeholder, the deploy-config
+artifact is pinned by `tests/unit/wrangler-config.test.ts` (no fabricated
+`namespace_id` may be committed), and the procedure is at
+`docs/TRL_DEPLOYMENT.md` ("Rate-limit namespace configuration"). The
+founder-owned steps are:
+
 - [ ] Founder creates the Cloudflare account and runs the first deploy
       (Workers Builds), which provisions the `CONTACT_RATE_LIMITER` namespace
       from the `namespace_id` below.
@@ -233,10 +244,19 @@ Still required when the account exists:
       change is needed: the endpoint picks the binding up automatically.
 - [ ] Keep the chosen values (`10 / 10s`) — they are set for a real-person
       margin, not for tuning; revisit only with observed production evidence.
+- [ ] Founder runs the rate-limit burst check on the deployed preview: 20
+      `POST /contact/` from a single client in under 10 seconds, expecting
+      the 11th and later to be rejected in the generic state, then a normal
+      submission to succeed after the 10-second window. The procedure is in
+      `docs/TRL_DEPLOYMENT.md` ("Rate-limit namespace configuration",
+      final item).
 
 ## Decision record
 
-**D-018** — response-security headers and the contact CSP (see Decision Log):
+**D-021** — repository / founder split at Gate 6 (see Decision Log): the
+repository-side work for the rate-limit deployment is closed at Gate 6; the
+founder-owned steps (account creation, `namespace_id`, the burst check) are
+in `TRL_DEPLOYMENT.md`. **D-018** — response-security headers and the contact CSP (see Decision Log):
 the deployment boundary, and this document is its rate-limit companion. The
 enforcement code is committed; only `namespace_id` is account-owned and
 therefore deferred to the deployment gate.
