@@ -1,0 +1,21 @@
+# Security headers for Cloudflare static-asset responses (Gate 5).
+#
+# `astro build` copies this directory to `dist/client/`, and Workers applies
+# these rules to every response served from the ASSETS binding — the eight
+# prerendered HTML routes, /contact/sent/, robots.txt, the favicon, fonts,
+# CSS, and the sitemap. Framing protection and HSTS are intentionally absent:
+# they are deployment-gate platform rules (D-018 — the preview harness embeds
+# the site cross-origin, and HSTS is only meaningful on the final HTTPS
+# domain).
+#
+# Headers for `/contact/` are NOT declared here: that route is
+# Worker-rendered, and the `_headers` file does not apply to responses
+# produced by Worker code — those are set by `src/middleware.ts` instead.
+#
+# The leading spaces before each `Header:` line are part of the _headers
+# format (a header line must be indented under its path).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), geolocation=(), microphone=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests

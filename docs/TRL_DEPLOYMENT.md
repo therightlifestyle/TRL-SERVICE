@@ -1,6 +1,6 @@
 # TRL — Deployment
 
-_Last updated: 2026-09-17 (Gate 4)._
+_Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implemented; rate limiting planned)._
 
 ## Current status
 
@@ -23,7 +23,9 @@ The application now produces a deployable artifact: `npm run build` emits the st
 - [ ] Deploy a preview, submit a real enquiry, and confirm it arrives in `officialtrlservice@gmail.com` with reply-to set correctly (the D-016 manual verification).
 - [ ] Verify the unconfigured-state behaviour disappears once variables are set (the form must render enabled).
 - [ ] Configure the custom domain and HTTPS on `therightlifestyle.com` (DNS change — founder authorization required).
-- [ ] Add platform-level protections: a rate-limit rule for `POST /contact/` and the security headers/CSP from Gate 5.
+- [ ] Provision the rate limiter: set the founder-chosen `namespace_id` in `wrangler.jsonc` and deploy, then run the `TRL_RATE_LIMITING.md` burst-check (20 POSTs → over-limit generic state → normal submission after the window).
+- [ ] Add the gate-5 platform rules: `X-Frame-Options`/CSP `frame-ancestors` pinning and `Strict-Transport-Security` on the final HTTPS domain (held out of the code so the preview harness and any temporary host never lock a bad decision into browsers, D-018 note).
+- [ ] Confirm the edge applies `public/_headers` to static responses and the Worker applies the contact CSP to `/contact/` (e2e-asserted in CI; re-checked on the real deploy).
 
 ## Planned deployment documentation
 

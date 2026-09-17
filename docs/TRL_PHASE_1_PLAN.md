@@ -43,9 +43,12 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 - Updated the privacy draft to disclose Turnstile and Resend processing truthfully.
 - Remaining for the deployment gate: real-credential delivery verification (no Resend or Turnstile account exists yet — founder action), platform rate limiting, and the production Turnstile keys.
 
-### Gate 5 — Production Hardening
+### Gate 5 — Production Hardening (in progress, 2026-09-17)
 
-- Review security headers, validation, abuse prevention, error leakage, dependency health, accessibility, performance, SEO, and monitoring.
+- Security headers and CSP: **implemented (D-018).** `src/lib/security.ts` is the single source; `public/_headers` applies the common headers + the static-pages CSP (`script-src 'none'`) to static-asset responses, and `src/middleware.ts` applies the contact CSP with the sanctioned Turnstile exception (`challenges.cloudflare.com` in `script-src`/`frame-src`) to Worker-rendered `/contact/`. Unit-pinned and e2e-asserted.
+- Abuse prevention: Turnstile, honeypot, and origin checks were in place at Gate 4. The platform rate-limit plan for `POST /contact/` is **planned** in `TRL_RATE_LIMITING.md` (binding, key, limit, order, and user-facing behaviour fixed; account-scoped `namespace_id` is a founder action at the deployment gate).
+- Accessibility: the manual keyboard/zoom/screen-reader pass is **scheduled** in `TRL_MANUAL_ACCESSIBILITY_PASS.md`, including the real-Turnstile-widget eyeball checks D-017 took out of automation.
+- Remaining in this gate: dependency re-review, performance/SEO (Lighthouse at Gates 5 and 7), monitoring/observability review, and the analytics founder decision.
 
 ### Gate 6 — Deployment Readiness
 
@@ -61,4 +64,4 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 
 ## Immediate next action
 
-Begin Gate 5 — Production Hardening: review the security-header and CSP plan (the Turnstile origin is the one sanctioned exception), evaluate a platform rate-limit binding for the contact route, re-run the dependency and accessibility reviews against the now-hybrid build, and schedule the manual keyboard/zoom/screen-reader pass. Real-credential delivery verification and production Turnstile keys remain founder actions attached to the deployment gate.
+Continue Gate 5 — Production Hardening from the three deliverables landed in this session (security headers/CSP implemented, rate-limit plan fixed, manual accessibility pass scheduled). Next: re-run the dependency audit and observe this branch's CI (typecheck → build → 220 unit tests → e2e including the new header assertions); then the remaining Gate 5 reviews — performance/SEO, monitoring/observability — and the open analytics founder decision. Real-credential delivery verification, production Turnstile keys, the rate-limit `namespace_id`, and framing/HSTS platform rules remain founder actions attached to the deployment gate.

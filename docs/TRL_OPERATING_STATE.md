@@ -1,6 +1,6 @@
 # TRL — Operating State
 
-_Last updated: 2026-09-17 (Gate 4 complete)._
+_Last updated: 2026-09-17 (Gate 5 in progress — security headers/CSP implemented; rate limiting planned; manual accessibility pass scheduled)._
 
 ## Current phase
 
@@ -8,7 +8,7 @@ _Last updated: 2026-09-17 (Gate 4 complete)._
 
 ## Current gate
 
-**Gate 5 — Production Hardening** is the active gate for the next session. Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete.
+**Gate 5 — Production Hardening** is the active gate, three deliverables in: security headers + CSP are implemented (D-018), the rate-limit plan for `POST /contact/` is fixed in `TRL_RATE_LIMITING.md`, and the manual accessibility pass is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md`. Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete.
 
 ## Status
 
@@ -18,6 +18,7 @@ _Last updated: 2026-09-17 (Gate 4 complete)._
 - Website: implemented. Astro 7.3.3 with TypeScript, a committed lockfile, the design token layer, accessible layout primitives and components, and all routes with truthful content, per-page metadata, canonical URLs, JSON-LD, robots.txt, and a sitemap. Eight routes prerender; `/contact/` is the one server-rendered route.
 - Lead capture/contact workflow: **implemented.** The form POSTs to the server-rendered `/contact/` route with honeypot, Turnstile, server-side validation, fail-closed Resend delivery, accessible error states with preserved input, and a noindex confirmation page. Delivery with **real** credentials is unverified because no Resend or Turnstile account exists — that is a founder action at the deployment gate.
 - CI: GitHub Actions runs typecheck, build, unit/static-accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit on every pull request.
+- Production hardening (Gate 5, in progress): security headers and CSP are implemented as a dual-write (D-018) — `public/_headers` for static responses (`script-src 'none'`) and `src/middleware.ts` for the Worker-rendered `/contact/` (the static CSP plus the `challenges.cloudflare.com` Turnstile exception). The rate-limit plan for `POST /contact/` is fixed in `TRL_RATE_LIMITING.md` (binding, key, limit, order, and user-facing behaviour), awaiting the founder's account-scoped `namespace_id`. The manual accessibility pass, now including the real Turnstile widget's rendering/size (D-017), is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md`.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
 - Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
 - Production launch: not authorized.
@@ -58,7 +59,9 @@ _Last updated: 2026-09-17 (Gate 4 complete)._
 
 ## Open questions requiring founder approval
 
-- Analytics provider or none (Gate 5).
+- Analytics provider or none (Gate 5, still open).
+- The rate-limit binding's `namespace_id` (account-scoped integer) and the Cloudflare account that provisions it — deployment gate (`TRL_RATE_LIMITING.md`).
+- Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — deployment gate (D-018 note).
 - Payment provider and payment/account ownership (after first release).
 - Final legal text and jurisdiction-specific requirements. The Privacy and Terms pages are published as clearly labelled drafts and are `noindex` until reviewed; Gate 4 added truthful Turnstile and Resend disclosures to the privacy draft.
 - Any founder biography, credentials, or imagery beyond facts already approved.

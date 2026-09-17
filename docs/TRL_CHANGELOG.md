@@ -1,5 +1,15 @@
 # TRL — Changelog
 
+## 2026-09-17 — Gate 5 (part 1): security headers/CSP, the rate-limit plan, and the manual accessibility pass
+
+- Implemented response-security headers and the Content Security Policy as a dual-write for the Workers-with-static-assets boundary (D-018). `src/lib/security.ts` is the single source of truth; `public/_headers` (committed, copied to `dist/client/_headers` at build) applies the common headers plus a `script-src 'none'` static-pages CSP to static responses, and `src/middleware.ts` applies the contact CSP — the static policy plus the one sanctioned exception, `script-src`/`frame-src` from `https://challenges.cloudflare.com` — to Worker-rendered `/contact/` responses. `_headers` does not apply to Worker responses (Cloudflare's documented behaviour, confirmed in the adapter's handler), which is why the route's header is set in code.
+- Chose the policy composition from the real surface: no first-party script, no third-party runtime request except Turnstile, no iframes/media, and inline styles only from Astro's scoped `<style>` blocks — hence `script-src 'none'`/Turnstile-only, `style-src 'self' 'unsafe-inline'`, `base-uri 'self'`, `form-action 'self'`, `object-src 'none'`, `upgrade-insecure-requests`. Framing protection and HSTS are held for the deployment gate as platform rules (the preview harness embeds the site cross-origin; early HSTS on a temporary host would lock a bad decision into browsers).
+- Removed the Turnstile `Response`-header additions from `src/pages/contact.astro`; the middleware now owns the contact CSP for every Worker response (including the POST error/redirect states).
+- Added `tests/unit/security-headers.test.ts` (policy contents, `withSecurityHeaders` behaviour, and a token-for-token pin of the `_headers` mirror against the canonical module) and e2e assertions in `tests/e2e/content.spec.ts` for the delivered headers on a static route and the Turnstile exception on `/contact/`.
+- Authored the rate-limit plan (`TRL_RATE_LIMITING.md`) for `POST /contact/`: a Workers `ratelimits` binding (`CONTACT_RATE_LIMITER`, 10 requests/10s per `cf-connecting-ip`) checked first in the pipeline, failing to the generic preserved-input state with fail-open on an absent/degraded binding. Left as a plan because `namespace_id` is an account-scoped founder value — nothing fabricated is committed.
+- Authored the manual accessibility pass (`TRL_MANUAL_ACCESSIBILITY_PASS.md`) and added the real Turnstile widget's rendering/size/keyboard/screen-reader checks that D-017 took out of automation.
+- Verified locally: `astro check` 0 errors (43 files); 220 unit tests (was 203); curl against the live preview confirms all three header paths (static 200, contact 200, contact POST 303). The browser suite cannot execute in this sandbox (no browser CDN) and runs on CI.
+
 ## 2026-09-17 — Post-Gate 4: e2e correction, and a required-field bug it exposed
 
 Gate 4 merged in PR #5 with `main` red. This section is the correction pass; every claim here was re-derived from the repository or from CI, not from the previous session's report.

@@ -89,6 +89,47 @@ test('organization structured data contains only approved facts', async ({ page 
   expect(data).not.toHaveProperty('address');
 });
 
+test('every static page carries the security headers and the static CSP', async ({
+  page,
+}) => {
+  for (const path of ['/', '/offers/', '/contact/sent/']) {
+    const response = await page.goto(path);
+    const headers = response!.headers();
+
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    expect(headers['permissions-policy']).toBe('camera=(), geolocation=(), microphone=()');
+
+    const csp = headers['content-security-policy'];
+    expect(csp).toContain("script-src 'none'");
+    expect(csp).not.toContain('challenges.cloudflare.com');
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain('upgrade-insecure-requests');
+  }
+});
+
+test('the contact route carries the CSP with the sanctioned Turnstile exception', async ({
+  page,
+}) => {
+  const response = await page.goto('/contact/');
+  const headers = response!.headers();
+
+  expect(headers['content-security-policy']).toContain(
+    'script-src https://challenges.cloudflare.com',
+  );
+  expect(headers['content-security-policy']).toContain(
+    'frame-src https://challenges.cloudflare.com',
+  );
+  expect(headers['content-security-policy']).toContain("style-src 'self' 'unsafe-inline'");
+  expect(headers['content-security-policy']).toContain("form-action 'self'");
+  // The exception is additive only: the contact page's *script-src* gains
+  // Turnstile but neither inline nor eval'd script (inline *styles* remain
+  // allowed, as on the static pages).
+  const scriptSrc = headers['content-security-policy']!.match(/script-src [^;]+/)?.[0] ?? '';
+  expect(scriptSrc).toBe('script-src https://challenges.cloudflare.com');
+});
+
 test('decorative systems graphics are hidden from assistive technology', async ({
   page,
 }) => {
