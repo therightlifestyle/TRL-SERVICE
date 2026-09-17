@@ -50,15 +50,17 @@ test('the contact page shows direct channels before the form', async ({ page }) 
   expect(channelsBox!.y).toBeLessThan(formBox!.y);
 });
 
-test('the not-yet-live enquiry form is disabled and says so', async ({ page }) => {
+test('the enquiry form is live and never claims to be switched off', async ({ page }) => {
   await page.goto('/contact/');
 
-  await expect(
-    page.getByText('This form is not accepting submissions yet'),
-  ).toBeVisible();
+  // Gate 4: the endpoint exists, so nothing may render as disabled (D-011).
+  await expect(page.getByText('not accepting submissions')).not.toBeVisible();
+  await expect(page.locator('fieldset[disabled]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Send enquiry' })).toBeEnabled();
 
-  for (const id of ['#name', '#email', '#service', '#message']) {
-    await expect(page.locator(id)).toBeDisabled();
+  // The full enquiry structure from docs/TRL_USER_JOURNEYS.md is present.
+  for (const name of ['name', 'email', 'service', 'message', 'phone', 'business', 'website']) {
+    await expect(page.locator(`[name="${name}"]`)).toBeAttached();
   }
 });
 

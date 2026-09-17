@@ -5,6 +5,10 @@
  * Labels are always visible above the control, required/optional status is stated
  * in words, instructions are connected with aria-describedby, and the error slot
  * is pre-wired so an invalid state never depends on colour alone.
+ *
+ * Gate 4: `value` re-renders what the visitor submitted after a failed POST
+ * (design system: "Preserve valid user input"), and `error` renders the
+ * server-side message for this field with aria-invalid on the control.
  */
 interface Props {
   id: string;
@@ -19,6 +23,10 @@ interface Props {
   minlength?: number;
   rows?: number;
   options?: readonly { value: string; label: string }[];
+  /** Submitted value to preserve after a server-side error. */
+  value?: string;
+  /** Server-side error message for this field. */
+  error?: string;
 }
 
 const {
@@ -34,11 +42,14 @@ const {
   minlength,
   rows = 6,
   options = [],
+  value = '',
+  error,
 } = Astro.props;
 
 const hintId = hint ? `${id}-hint` : undefined;
-const errorId = `${id}-error`;
+const errorId = error ? `${id}-error` : undefined;
 const describedBy = [hintId, errorId].filter(Boolean).join(' ');
+const invalid = error !== undefined;
 ---
 
 <div class="field" data-field={id}>
@@ -66,18 +77,24 @@ const describedBy = [hintId, errorId].filter(Boolean).join(' ');
         maxlength={maxlength}
         minlength={minlength}
         placeholder={placeholder}
-        aria-describedby={describedBy}
-      />
+        aria-describedby={describedBy || undefined}
+        aria-invalid={invalid ? 'true' : undefined}
+      >
+        {value}
+      </textarea>
     ) : type === 'select' ? (
       <select
         class="field__control"
         id={id}
         name={name}
         required={required}
-        aria-describedby={describedBy}
+        aria-describedby={describedBy || undefined}
+        aria-invalid={invalid ? 'true' : undefined}
       >
         {options.map((option) => (
-          <option value={option.value}>{option.label}</option>
+          <option value={option.value} selected={option.value === value}>
+            {option.label}
+          </option>
         ))}
       </select>
     ) : (
@@ -91,15 +108,21 @@ const describedBy = [hintId, errorId].filter(Boolean).join(' ');
         minlength={minlength}
         placeholder={placeholder}
         autocomplete={autocomplete}
-        aria-describedby={describedBy}
+        aria-describedby={describedBy || undefined}
+        aria-invalid={invalid ? 'true' : undefined}
+        value={value}
       />
     )
   }
 
-  <p class="field__error" id={errorId} hidden>
-    <span class="field__error-word">Error:</span>
-    <span class="field__error-text"></span>
-  </p>
+  {
+    error && (
+      <p class="field__error" id={errorId}>
+        <span class="field__error-word">Error:</span>
+        <span class="field__error-text">{error}</span>
+      </p>
+    )
+  }
 </div>
 
 <style>

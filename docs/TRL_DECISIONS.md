@@ -99,3 +99,28 @@
 - **Decision:** `/privacy/` and `/terms/` publish a truthful description of current practice, each opening with a visible "Draft — pending legal review" notice stating that no effective date is set. Both carry `noindex, follow` and are excluded from the sitemap.
 - **Why:** D-008 includes the legal pages in scope, and the site needs a truthful privacy description because visitors send personal data by email. Inventing finished policy text, or shipping empty placeholders labelled as policy, were both rejected.
 - **Consequence:** The drafts state only what is verifiably true today — no analytics, no tracking cookies, self-hosted fonts, no database, inbox as system of record. Approved legal text replaces them before launch, and the `noindex` directive and sitemap exclusion are removed at that point.
+
+## D-014 — The contact endpoint is a server-rendered `/contact/` route on the Cloudflare adapter
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 4), within the founder-approved D-005/D-006 direction
+- **Decision:** `/contact/` becomes the single server-rendered Astro route (`prerender = false`, `@astrojs/cloudflare` 14.3.2 with `wrangler` 4.133.0); every other route stays prerendered. The page handles GET (render the form) and POST (process the submission) with no client-side script; all submission logic lives in the pure module `src/lib/contact.ts`. Success redirects (`303`) to a static, noindex `/contact/sent/` page.
+- **Why:** Accessible server-rendered errors — an error summary that takes focus, per-field errors, preserved input — require the server to re-render the form, which rules out keeping `/contact/` static with a separate API route. The adapter compiles the route into the deployment the founder already approved: Cloudflare. The concrete platform is Workers with static assets, because by 2026 Cloudflare steers new full-stack projects there rather than to classic Pages (Pages remains supported but maintenance-mode); the Astro 7 adapter targets Workers, which keeps one build, one deploy, and the same free-tier posture.
+- **Consequence:** Static assets now build to `dist/client/` with the server entry in `dist/server/` (unit tests read `dist/client/`); `/contact/` no longer appears as static HTML, so its structure is asserted by the browser suite instead. Deployment configuration (account, custom domain, variables) remains Gate 6 work under D-004/D-006 — this decision changes the target shape, not the approval to deploy. Recorded for founder review as a refinement of D-006's "Cloudflare Pages" wording, not a change of vendor.
+
+## D-015 — The Turnstile script is the one sanctioned third-party client script
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 4), consequence of founder-approved D-007
+- **Decision:** `/contact/` loads Cloudflare's Turnstile script from `challenges.cloudflare.com`. It is the only third-party client script on the site; no page ships any first-party client JavaScript, keeping D-010 intact for everything else.
+- **Why:** Turnstile cannot issue a verification token without its script, and spam protection on the enquiry form was approved at Gate 1 (D-007). Rejecting the script would have meant rejecting Turnstile itself.
+- **Consequence:** The no-third-party-runtime-request guarantee is now "everywhere except `/contact/`, which may reference only `challenges.cloudflare.com`" — asserted by tests in both suites. The Gate 5 Content Security Policy must allow `script-src` and `frame-src` from that origin. The privacy draft discloses the widget and its functional cookies. The form degrades honestly without JavaScript: a `<noscript>` message points visitors to WhatsApp and email.
+
+## D-016 — No delivery-mock backdoor in the endpoint; e2e proves the pipeline to the delivery boundary
+
+- **Date:** 2026-09-17
+- **Status:** Implementation decision (Gate 4)
+- **Decision:** The endpoint has no test mode, mock flag, or configurable delivery URL. Automated coverage is split: unit tests verify the full delivery contract (payload, reply-to, credentials, every failure branch) against injected fakes; the browser suite runs against a server with Turnstile test keys and no delivery configuration, so a valid submission exercises the entire real pipeline and ends in the honest generic failure state. Real email delivery is verified manually with real credentials in a deployed preview, never in CI.
+- **Why:** A Playwright run cannot intercept the server's own outbound requests, so "mocked delivery in e2e" would have required an environment-reachable switch that skips or redirects delivery — a backdoor whose worst-case misconfiguration is silently discarding visitors' messages or exfiltrating them to a third party. That contradicts the security baseline (generic errors, no internal controls in production paths) and the project's no-inactive-controls rule. The chosen split tests everything real except the one call that requires real credentials.
+- **Consequence:** The e2e "valid submission" test asserts the failure state rather than a success page; the success redirect is still e2e-covered through the honeypot path (which returns the identical user-facing outcome). Cloudflare's published dummy Turnstile keys make the verification half fully testable without any account. A founder/ops checklist item is created for the deployment gate: send and receive one real enquiry end-to-end before launch.
+

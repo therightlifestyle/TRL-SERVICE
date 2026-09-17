@@ -1,5 +1,16 @@
 # TRL — Changelog
 
+## 2026-09-17 — Gate 4: business flow (contact endpoint)
+
+- Implemented the contact endpoint as the single server-rendered route (D-014): `/contact/` handles GET and POST via `@astrojs/cloudflare` 14.3.2 + `wrangler` 4.133.0; all other routes remain prerendered. Static assets now build to `dist/client/`.
+- Wrote the whole submission pipeline as pure logic in `src/lib/contact.ts`: honeypot (checked before any network call), Cloudflare Turnstile server-side verification (fail-closed), server-side validation with exact limits, Resend delivery (fail-closed, generic errors), and PII-free structured outcome logging. Same-origin enforcement comes from Astro's built-in `checkOrigin`, verified by tests.
+- Enabled the form: error summary that takes focus and links to invalid fields, per-field errors via `aria-invalid`/`aria-describedby`, preserved input on every failure state, a `noindex` static confirmation page (`/contact/sent/`) reached by PRG redirect, and an honest disabled render when a deployment lacks its Turnstile key. Added the hidden honeypot field, the Turnstile widget (the one sanctioned third-party script, D-015), and a `<noscript>` fallback pointing to the live channels.
+- Replaced the disabled-state assertions in both suites: 42 new unit tests (validation matrix with exact boundaries; endpoint pipeline with injected Turnstile/delivery/logging fakes, including ordering, log hygiene, and the email payload contract) and a new Playwright contact-form suite covering the real browser flow — error states, focus behaviour, preserved input, the delivery-boundary failure state, the honeypot success path, and endpoint hardening (403/405/415).
+- Deterministic test environment: `.dev.vars.example` (committed) carries Cloudflare's published dummy Turnstile keys; the Playwright webServer copies it to `.dev.vars` before every run, so CI and local runs are identical and never send real email (D-016).
+- Updated the privacy draft with truthful Turnstile and Resend disclosures; recorded Resend's free-tier restrictions in `TRL_ARCHITECTURE.md`; documented the founder's qualification-to-repeat workflow in `TRL_USER_JOURNEYS.md`; recorded D-014, D-015, and D-016.
+- Locally verified every server path by curl against `astro preview` (303 success/honeypot, 403 verification and origin, 415 content-type, 400 body, 405 methods, PII-free logs) — browser-level flows verified on CI.
+- No accounts, credentials, DNS changes, deployments, payment integrations, or generated imagery were created. Real-credential delivery verification is explicitly deferred to the deployment gate as a founder action.
+
 ## 2026-09-17 — Repository reset and project memory
 
 - Inspected the repository, Git status, history, and available implementation/configuration files.

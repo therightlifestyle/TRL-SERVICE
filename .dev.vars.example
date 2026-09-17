@@ -1,0 +1,25 @@
+# Runtime variables for LOCAL development and the e2e suite only.
+#
+# Cloudflare publishes these dummy Turnstile keys precisely for testing; they
+# are public, work on any origin including localhost, and are never valid on a
+# real deployment. Copy this file to `.dev.vars`:
+#
+#     cp .dev.vars.example .dev.vars
+#
+# The Playwright webServer does this copy automatically before each run, which
+# also means local `.dev.vars` edits are overwritten by test runs — keep real
+# credentials out of this file and out of `.dev.vars` (docs/TRL_SECURITY.md).
+# Real-credential verification happens in a deployed preview environment, never
+# locally or in CI (docs/TRL_ARCHITECTURE.md).
+
+# Turnstile test sitekey: the widget renders and always passes.
+PUBLIC_TURNSTILE_SITEKEY=1x00000000000000000000AA
+
+# Turnstile test secret: server-side verification always passes.
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+
+# Deliberately unset: with no delivery configuration, valid submissions produce
+# the generic "could not send" state — exactly the branch the suite exercises.
+# RESEND_API_KEY=
+# CONTACT_TO_EMAIL=
+# RESEND_FROM_EMAIL=

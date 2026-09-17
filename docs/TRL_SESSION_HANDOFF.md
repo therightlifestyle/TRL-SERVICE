@@ -4,68 +4,62 @@ _Last updated: 2026-09-17_
 
 ## Current status
 
-Gate 3 — Core Website is complete. The Astro static site is built and implements the Gate 2 design system: all nine routes render with truthful content, approved pricing and contact details, semantic structure, metadata, and SEO foundations. CI runs typecheck, build, unit, end-to-end, and dependency-audit jobs on every pull request. The contact form's submission endpoint does not exist yet and the form ships deliberately disabled; email and WhatsApp are the live channels.
+Gate 4 — Business Flow is complete. The contact form is live in code: `/contact/` is the single server-rendered route (Astro's Cloudflare adapter), carrying the whole submission pipeline — same-origin enforcement, honeypot, Turnstile verification, server-side validation, fail-closed Resend delivery, generic errors, and PII-free logging — with accessible error states, preserved input, and a noindex confirmation page. Eight other routes remain prerendered static HTML. CI runs typecheck, build, unit, end-to-end, and dependency-audit jobs on every pull request, and the e2e suite now exercises the real form flow in a browser. Nothing is deployed and no provider accounts exist, so delivery with real credentials is the founder's deployment-gate step.
 
 ## Current phase and gate
 
 Phase 1 — Professional service foundation and commercial entry point.
 
-Completed: Gate 0 — Repository Reset; Gate 1 — Architecture; Gate 2 — Design System; Gate 3 — Core Website.
+Completed: Gate 0 — Repository Reset; Gate 1 — Architecture; Gate 2 — Design System; Gate 3 — Core Website; Gate 4 — Business Flow.
 
-Active gate for the next session: **Gate 4 — Business Flow**.
+Active gate for the next session: **Gate 5 — Production Hardening**.
 
 ## Completed this session
 
-- Scaffolded Astro 7.3.3 with TypeScript; committed and reviewed `package-lock.json` (299 packages, 0 vulnerabilities).
-- Implemented the token layer and global stylesheet, then the component set: skip link, header/navigation, wordmark, button, card, offer card, section/page intro, step list, notice, form field, footer, WhatsApp affordance, and systems graphics.
-- Built Home, Services, AI Solutions, Offers, About, Contact, Privacy, Terms, and 404.
-- Centralised approved facts in `src/lib/site.ts` and pinned them with content-invariant tests.
-- Added SEO foundations: canonical URLs, per-page metadata, Open Graph, JSON-LD limited to approved facts, robots.txt, and a sitemap excluding the noindex legal drafts.
-- Established `.github/workflows/ci.yml` with verify, e2e, and dependency-review jobs.
-- Wrote 161 unit tests and a Playwright suite covering navigation, content, accessibility, reflow, target size, reduced motion, and no-CSS resilience.
-- Self-hosted the Newsreader and Manrope latin WOFF2 subsets with their OFL licence files.
-- Recorded D-010 through D-013 and advanced the operating state, plan, architecture, design system, README, and changelog.
+- Added `@astrojs/cloudflare` 14.3.2 and `wrangler` 4.133.0 (reviewed lockfile; `npm audit` 0 vulnerabilities) and made `/contact/` the one `prerender = false` route inside the otherwise-static build (D-014). Static assets moved to `dist/client/`; unit tests were updated accordingly.
+- Implemented `src/lib/contact.ts`: validation with exact limits, honeypot-before-everything ordering, Turnstile siteverify with fail-closed behaviour, Resend delivery with the approved destination and reply-to, generic error outcomes with status codes (400/403/415/422/503), and structured outcome logging — all as pure functions with injected dependencies.
+- Reworked `contact.astro` into the endpoint: GET renders the enabled form (or the honest disabled state when the sitekey is unconfigured); POST processes, re-renders errors with an autofocus error summary, `aria-invalid`/`aria-describedby` per-field errors, and preserved values; success redirects 303 to the new static `/contact/sent/` page. Added the honeypot, the Turnstile widget (D-015 — the one third-party script), a `<noscript>` channel fallback, and the `ErrorSummary` component; extended `Field` with value/error support.
+- Replaced the disabled-state assertions: `tests/unit/contact-validation.test.ts` (the full boundary matrix), `tests/unit/contact-endpoint.test.ts` (the whole pipeline against fakes, incl. ordering, log hygiene, and the email payload contract), and `tests/e2e/contact-form.spec.ts` (real browser flow: error states, focus, preserved input, the delivery-boundary failure state, the honeypot success path, and 403/405/415 hardening).
+- Established the deterministic test environment: committed `.dev.vars.example` with Cloudflare's published dummy Turnstile keys; the Playwright webServer copies it to `.dev.vars`, so CI and local runs are identical and can never send real email (D-016).
+- Updated the privacy draft with truthful Turnstile and Resend disclosures; recorded Resend's free-tier restrictions in `TRL_ARCHITECTURE.md`; documented the qualification-to-repeat workflow in `TRL_USER_JOURNEYS.md`; recorded D-014, D-015, D-016; updated the security baseline, design system, architecture, deployment, operating state, plan, README, and changelog.
+- Verified locally: `astro check` clean; build clean; 203 unit tests pass; every server path exercised by curl against `astro preview` in the workerd runtime (303 success/honeypot, 403 verification/origin, 415, 400, 405, PII-free logs).
 
 ## Remaining work
 
-- Gate 4: implement the contact endpoint (server-side validation, honeypot, Turnstile, Resend delivery, generic errors), enable the form with an accessible error summary and success state, and document the qualification-to-repeat workflow.
-- Gates 5–8: production hardening, deployment readiness, final verification, and founder launch approval.
+- Gate 5: security headers and CSP (allow `challenges.cloudflare.com` script/frame on `/contact/`), platform rate limiting for `POST /contact/`, and the manual accessibility/performance/SEO reviews.
+- Gates 6–8: deployment readiness (founder accounts: Cloudflare, Turnstile, Resend), final verification, founder launch approval.
+- Founder actions parked at the deployment gate: create the accounts, set production keys, verify the sender domain (DNS change — explicit authorization), and send/receive one real enquiry end-to-end (the D-016 manual check).
 
 ## Known issues and risks
 
-- The Playwright suite could not be executed in the authoring sandbox (browser binaries were undownloadable; only the npm registry was reachable), so it was first run on CI. That run found a real defect the static checks could not: a standalone "Compare the offers in full" link measured under the 24px minimum target size. It was fixed, and the target-size test was rewritten to encode the WCAG 2.5.8 inline-text exception explicitly and to assert the 44px design-system floor on standalone controls. **Local Playwright runs remain impossible in this environment; CI is the only place the e2e suite executes.**
-- No manual keyboard, zoom, screen-reader, or real-device pass has been performed. Automated checks do not replace this, and it remains required before launch.
-- Page copy was written to be truthful and consistent with the approved brief, but it has not been founder-reviewed. The service descriptions, AI solution catalogue, offer deliverables, and operating principles are all plausible descriptions of intended work rather than founder-dictated text — **the founder should read and correct them.**
-- The Privacy and Terms pages are drafts describing current practice, labelled as such and set to `noindex`. They are not reviewed legal text.
-- No detailed founder biography or credentials are published, because none are approved.
-- Email-provider sending restrictions and sender-domain verification remain Gate 4 and deployment concerns.
-- Analytics, legal text, payment provider, and public launch timing remain open founder decisions.
+- **Local Playwright runs remain impossible in the authoring sandbox** (browser binaries undownloadable); CI is the only place the e2e suite executes. The contact-form e2e tests additionally depend on network access to `challenges.cloudflare.com`, which the sandbox also blocks — the suite was written for CI and has not yet been executed against a real browser. Watch its first CI run closely.
+- Email delivery is **unverified with real credentials** — no Resend account exists. The delivery contract (payload, reply-to, fail-closed behaviour) is unit-tested; the real send is the deployment-gate checklist item.
+- Turnstile verification, delivery, and the sitekey are per-deployment configuration: if a deployment is missing `PUBLIC_TURNSTILE_SITEKEY` the form renders disabled with an honest notice (by design); if it is missing `TURNSTILE_SECRET` or the Resend variables, submissions fail closed with the generic error state. Production variables must be set at the deployment gate.
+- No manual keyboard, zoom, screen-reader, or real-device pass has been performed. The error-summary autofocus behaviour is asserted by e2e in Chromium; a manual screen-reader check of the whole form flow is still required before launch.
+- Page copy (including the new form, notice, and confirmation copy) remains founder-unreviewed, like the rest of the site's text.
+- The `astro dev`/`astro preview` behaviour of loading `.dev.vars` and the `dist/client` layout were verified empirically in this environment; if the adapter changes them, `.dev.vars.example`, the Playwright webServer command, and `tests/unit/rendered-pages.test.ts` are the coupled places.
 
 ## Decisions recorded
 
-- D-005–D-008: Astro stack, Cloudflare Pages, email-only contact delivery, and full core site scope.
-- D-009: quiet-authority, light-first design system with text wordmark and abstract systems graphics.
-- D-010: the site ships zero client JavaScript, so no mobile menu toggle was built.
-- D-011: the contact form ships disabled until its endpoint exists.
-- D-012: `--color-border` darkened from `#7C8C96` to `#6F7F89` for non-text contrast.
-- D-013: legal pages ship as labelled, noindex drafts.
+- D-014: the contact endpoint is a server-rendered `/contact/` route on `@astrojs/cloudflare`; the concrete platform is Cloudflare Workers with static assets (the 2026 successor to classic Pages, within the founder-approved Cloudflare direction) — flagged for founder review.
+- D-015: Cloudflare's Turnstile script on `/contact/` is the one sanctioned third-party client script; D-010's zero-first-party-JS baseline holds everywhere.
+- D-016: no delivery-mock backdoor exists; e2e proves the pipeline to the delivery boundary, unit tests prove the delivery contract, and real delivery is verified manually at the deployment gate.
 
 ## Verification
 
-- `astro check`: 0 errors, 0 warnings, 0 hints across 25 files.
-- `astro build`: 9 pages built; sitemap generated.
-- `npm run test:unit`: 161 tests passing across 3 files, including axe-core structural checks on every built page.
+- `astro check`: 0 errors, 0 warnings, 0 hints.
+- `npm run build`: 8 prerendered routes plus the server entry; sitemap excludes `/privacy/`, `/terms/`, `/contact/sent/` and includes `/contact/`.
+- `npm run test:unit`: 203 tests passing across 5 files (was 161; +42 endpoint/validation, plus reworked rendered-page checks).
 - `npm audit`: 0 vulnerabilities, production and full trees.
-- Every contrast ratio documented in `TRL_DESIGN_SYSTEM.md` recomputed from the token values; three previously estimated figures were corrected and one failing pairing was fixed (D-012).
-- `npm run test:e2e`: executed on CI. First run: 62 passed, 2 failed (target size); fixed, and re-verified on CI.
+- Live endpoint verification via curl against `astro preview`: honeypot → 303; missing token → 403 with summary and preserved values; bad token → 403 (fail-closed over a blocked network); JSON → 415; foreign/missing Origin → 403; PUT/DELETE/PATCH → 405; unconfigured delivery → 503 with the generic notice; logs contain outcome events only.
+- `npm run test:e2e`: written for CI (browser binaries unavailable locally); see the risk note above.
 - No accounts, credentials, DNS changes, deployments, or generated imagery were created.
 
 ## Git
 
-- Branch: `arena/01a0afa6-trl-service`
-- Commits: `feat: build gate 3 core website`, `fix: meet minimum target size on standalone links`
-- Pull request: [#4 — Gate 3: build the core website](https://github.com/therightlifestyle/TRL-SERVICE/pull/4)
+- Branch: `arena/01a0afc8-trl-service`
+- Pull request: to be created from this branch ("Gate 4: contact endpoint and business flow")
 
 ## NEXT SINGLE ACTION
 
-Begin Gate 4 by implementing the contact endpoint: server-side validation, honeypot, Turnstile verification, Resend delivery to the approved address, and generic error responses — then enable the form and replace the disabled-state assertions in both test suites with submission, error-summary, and success-state coverage.
+Push the branch, open the pull request, and watch the e2e job's first run of `tests/e2e/contact-form.spec.ts` — it is the only suite that has never executed against a real browser. Fix anything it finds, then begin Gate 5 — Production Hardening: security headers and the CSP (with the `challenges.cloudflare.com` exception), a platform rate-limit plan for `POST /contact/`, and scheduling the manual accessibility pass.

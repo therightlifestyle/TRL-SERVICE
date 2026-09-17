@@ -16,9 +16,13 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile', use: { ...devices['Pixel 5'] } },
   ],
-  // E2E runs against a real production build, not the dev server.
+  // E2E runs against a real production build, not the dev server. The server
+  // environment is forced to Cloudflare's published dummy Turnstile keys with
+  // no email configuration (see tests/e2e/contact-form.spec.ts for what that
+  // means for the tests), which keeps runs deterministic on CI and any local
+  // machine and guarantees no real email is ever sent from this suite.
   webServer: {
-    command: `npm run build && npx astro preview --host 127.0.0.1 --port ${PORT}`,
+    command: `cp .dev.vars.example .dev.vars && npm run build && npx astro preview --host 127.0.0.1 --port ${PORT}`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

@@ -1,0 +1,19 @@
+/*
+ * Wrangler configuration.
+ *
+ * The Astro Cloudflare adapter generates the full deploy config into
+ * `dist/client/wrangler.json` at build time (see docs/TRL_DEPLOYMENT.md).
+ * This file anchors local development: the @cloudflare/vite-plugin reads it to
+ * resolve the project root, where `.dev.vars` supplies local runtime variables
+ * (Cloudflare's published dummy Turnstile keys — see `.dev.vars.example`).
+ *
+ * No production values live here: runtime variables are set in the hosting
+ * platform, never committed (docs/TRL_SECURITY.md).
+ */
+{
+  "name": "trl-service",
+  "compatibility_date": "2026-09-16",
+  "observability": {
+    "enabled": true
+  }
+}

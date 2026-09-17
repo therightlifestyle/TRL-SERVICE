@@ -12,9 +12,14 @@ import { beforeAll, describe, expect, it } from 'vitest';
  * Rendered-state checks that need a real engine — colour contrast as painted,
  * focus visibility, reflow at 320px, and keyboard behaviour — live in the
  * Playwright suite in tests/e2e and are not duplicated here.
+ *
+ * Since Gate 4, /contact/ is the one server-rendered route (it processes the
+ * form POST), so it has no static HTML here: its structure, states, and the
+ * enabled form are asserted by the Playwright suite in tests/e2e/contact-form.spec.ts.
+ * Static assets now build to dist/client (the Workers adapter layout).
  */
 
-const DIST = join(process.cwd(), 'dist');
+const DIST = join(process.cwd(), 'dist', 'client');
 
 const pages = [
   { path: 'index.html', route: '/' },
@@ -22,7 +27,7 @@ const pages = [
   { path: 'ai-solutions/index.html', route: '/ai-solutions/' },
   { path: 'offers/index.html', route: '/offers/' },
   { path: 'about/index.html', route: '/about/' },
-  { path: 'contact/index.html', route: '/contact/' },
+  { path: 'contact/sent/index.html', route: '/contact/sent/' },
   { path: 'privacy/index.html', route: '/privacy/' },
   { path: 'terms/index.html', route: '/terms/' },
   { path: '404.html', route: '/404' },
@@ -68,26 +73,50 @@ describe('build output', () => {
     }
   });
 
-  it('makes no third-party runtime requests', () => {
+  it('loads no third-party runtime resources', () => {
+    // Resource loads (scripts, styles, images, frames, preloads) pull from the
+    // network on page view; plain anchors only navigate when clicked and are
+    // covered by the external-link test below.
+    const resourceLoads =
+      /<(?:script|link|img|iframe|audio|video|source|embed|object|track)[^>]+(?:src|href)="(https?:\/\/[^"]+)"/g;
+
     for (const page of pages) {
       const html = readFileSync(join(DIST, page.path), 'utf8');
-      const externals = [...html.matchAll(/(?:src|href)="(https?:\/\/[^"]+)"/g)]
+      const externals = [...html.matchAll(resourceLoads)]
+        .map((match) => match[1])
+        .filter((url) => !url.startsWith('https://therightlifestyle.com'));
+      expect(externals, `${page.path} loads a third-party resource`).toEqual([]);
+    }
+  });
+
+  it('links off-site only where approved', () => {
+    // The only sanctioned outbound links are the WhatsApp deep links on every
+    // page and the Cloudflare privacy-policy disclosure on the legal draft.
+    for (const page of pages) {
+      const html = readFileSync(join(DIST, page.path), 'utf8');
+      const anchors = [...html.matchAll(/<a[^>]+href="(https?:\/\/[^"]+)"/g)]
         .map((match) => match[1])
         .filter(
           (url) =>
             !url.startsWith('https://therightlifestyle.com') &&
-            !url.startsWith('https://wa.me/') &&
-            !url.startsWith('https://schema.org'),
+            !url.startsWith('https://wa.me/'),
         );
-      expect(externals, `${page.path} loads a third-party asset`).toEqual([]);
+
+      if (page.route === '/privacy/') {
+        expect(anchors).toEqual(['https://www.cloudflare.com/privacypolicy/']);
+      } else {
+        expect(anchors, `${page.path} has unexpected off-site links`).toEqual([]);
+      }
     }
   });
 
-  it('keeps the legal drafts out of the sitemap', () => {
+  it('keeps the legal drafts and the confirmation page out of the sitemap', () => {
     const sitemap = readFileSync(join(DIST, 'sitemap-0.xml'), 'utf8');
     expect(sitemap).toContain('https://therightlifestyle.com/offers/');
+    expect(sitemap).toContain('https://therightlifestyle.com/contact/');
     expect(sitemap).not.toContain('/privacy/');
     expect(sitemap).not.toContain('/terms/');
+    expect(sitemap).not.toContain('/contact/sent/');
   });
 });
 
@@ -185,45 +214,26 @@ describe.each(pages)('$route', ({ path, route }) => {
   }, 60_000);
 });
 
-describe('contact page', () => {
-  it('renders the enquiry form as explicitly disabled while the endpoint is Gate 4 work', () => {
-    const { window } = load('contact/index.html');
+describe('contact route', () => {
+  it('is server-rendered, not emitted as static HTML', () => {
+    // /contact/ must handle POST, so it must never silently become a
+    // prerendered page again — that would ship a form whose submissions 405.
+    expect(existsSync(join(DIST, 'contact', 'index.html'))).toBe(false);
+    expect(existsSync(join(DIST, 'contact', 'sent', 'index.html'))).toBe(true);
+  });
+});
+
+describe('contact confirmation page', () => {
+  it('is marked noindex and states what happens next', () => {
+    const { window } = load('contact/sent/index.html');
     const doc = window.document;
 
-    const fieldset = doc.querySelector('form fieldset');
-    expect(fieldset?.hasAttribute('disabled')).toBe(true);
-    expect(doc.body.textContent).toContain('not accepting submissions yet');
-  });
-
-  it('labels every control visibly and states required or optional in words', () => {
-    const { window } = load('contact/index.html');
-    const doc = window.document;
-
-    const controls = doc.querySelectorAll('form input, form select, form textarea');
-    expect(controls.length).toBeGreaterThan(0);
-
-    for (const control of controls) {
-      const id = control.getAttribute('id');
-      expect(id, 'every control needs an id for its label').toBeTruthy();
-
-      const label = doc.querySelector(`label[for="${id}"]`);
-      expect(label, `missing visible label for ${id}`).not.toBeNull();
-
-      const status = label?.querySelector('.field__status')?.textContent?.trim();
-      expect(['Required', 'Optional']).toContain(status);
-    }
-  });
-
-  it('shows email and WhatsApp above the form rather than behind it', () => {
-    const html = readFileSync(join(DIST, 'contact', 'index.html'), 'utf8');
-    const emailIndex = html.indexOf('officialtrlservice@gmail.com');
-    const whatsappIndex = html.indexOf('wa.me/923190091457');
-    const formIndex = html.indexOf('<form');
-
-    expect(emailIndex).toBeGreaterThan(-1);
-    expect(whatsappIndex).toBeGreaterThan(-1);
-    expect(emailIndex).toBeLessThan(formIndex);
-    expect(whatsappIndex).toBeLessThan(formIndex);
+    expect(doc.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'noindex, follow',
+    );
+    expect(doc.querySelector('h1')?.textContent).toContain('Your enquiry was sent');
+    // No response-time promise is made (journey J2: none may be invented).
+    expect(doc.body.textContent).not.toMatch(/within \d+ (hours|days|minutes)/i);
   });
 });
 

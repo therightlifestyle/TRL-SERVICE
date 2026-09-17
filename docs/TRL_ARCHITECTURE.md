@@ -27,10 +27,10 @@ _Last updated: 2026-09-17 (Gate 3). The stack below is founder-approved and reco
 | --- | --- | --- |
 | Framework | Astro with TypeScript | Content-first; pages compile to static HTML with near-zero client JavaScript. **Pinned at 7.3.3 with a committed `package-lock.json` (Gate 3).** |
 | Styling | Plain modern CSS with design tokens (custom properties) | No CSS framework. Implemented as `src/styles/tokens.css` plus `src/styles/global.css`, with component styles scoped in each `.astro` file. |
-| Form endpoint | One Astro server endpoint deployed as a Cloudflare Pages Function | Same-origin POST with server-side validation; whether it is an Astro action or a plain API route is decided at the scaffold. |
-| Email delivery | Resend transactional email API to the approved address | Free tier (3,000 emails/month, 100/day) covers expected lead volume; no database. The provider can be swapped behind the endpoint without changing the flow. |
-| Spam protection | Cloudflare Turnstile plus a honeypot | Free and privacy-friendly. |
-| Hosting | Cloudflare Pages | Free tier permits commercial use; also manages DNS and HTTPS for the intended domain. |
+| Form endpoint | `/contact/` itself: a server-rendered Astro route that handles the POST (D-014) | All submission logic is a pure module, `src/lib/contact.ts`, unit-tested with injected dependencies. Same-origin enforcement comes from Astro's built-in `checkOrigin`, plus a honeypot, Turnstile, and fail-closed delivery. |
+| Email delivery | Resend transactional email API to the approved address | Free tier (3,000 emails/month, 100/day) covers expected lead volume; no database. The provider can be swapped behind the endpoint without changing the flow. See "Email delivery and free-tier restrictions" below. |
+| Spam protection | Cloudflare Turnstile plus a honeypot | Free and privacy-friendly. The Turnstile script is the only third-party client script (D-015). |
+| Hosting | Cloudflare Workers with static assets, via `@astrojs/cloudflare` 14.3.2 | The concrete platform under the founder-approved "Cloudflare Pages" direction: by 2026 Cloudflare steers new full-stack projects to Workers with static assets, and the Astro 7 adapter targets it (D-014). Nothing is deployed yet. |
 | Unit tests | Vitest 5.0.1 | Content invariants, token/contrast verification, and static accessibility checks over the build output using axe-core and jsdom. |
 | E2E tests | Playwright 1.63.0 | Navigation, content, reflow, keyboard, and axe accessibility runs against a real production build, on a desktop and a mobile project. |
 | CI | GitHub Actions | `.github/workflows/ci.yml`: `npm ci`, typecheck, build, unit tests, Playwright e2e, and a dependency audit on every pull request. |
@@ -55,50 +55,74 @@ _Last updated: 2026-09-17 (Gate 3). The stack below is founder-approved and reco
 | `/privacy/`, `/terms/` | Legal pages | Structure only until approved legal text exists |
 | global | Header, footer, persistent WhatsApp affordance, per-page metadata | — |
 
-A `/404` page is also built, carrying `noindex` and a list of the core routes.
+A `/404` page is also built, carrying `noindex` and a list of the core routes. The post-submission confirmation `/contact/sent/` is a static, `noindex` utility page excluded from the sitemap: anyone can land on it directly, so it asserts nothing beyond "if you just sent the form, it worked".
 
 SEO approach: per-page titles and descriptions, semantic HTML, generated sitemap.xml and robots.txt, canonical URLs on the production domain, and JSON-LD organization schema limited to truthful facts.
 
-## Implemented structure (Gate 3)
+## Implemented structure (Gate 4)
 
 ```
-astro.config.mjs        Site origin, static output, trailing slashes, sitemap filter
+astro.config.mjs        Site origin, static output with the Cloudflare adapter,
+                        trailing slashes, sitemap filter (noindex exclusions)
+wrangler.jsonc          Anchors local dev config; the adapter generates the real
+                        deploy config into dist/client/wrangler.json at build
 package.json            Pinned dependencies and the dev/build/typecheck/test scripts
 package-lock.json       Committed and reviewed; npm ci in CI
+.env.example            Committed names/comments for build-time variables
+.dev.vars.example       Committed dummy Turnstile keys for local dev and e2e
 .github/workflows/ci.yml  Typecheck, build, unit, e2e, and dependency-audit jobs
 public/fonts/           Self-hosted WOFF2 subsets plus their OFL licence files
 public/robots.txt       Deliberate crawl policy and sitemap pointer
+src/env.d.ts            Runtime type of the Workers env (cloudflare:workers)
 src/lib/site.ts         Founder-approved facts: contact, offers, services, solutions
+src/lib/contact.ts      The whole submission pipeline as pure functions:
+                        validation, honeypot, Turnstile orchestration, email
+                        composition, logging, and the fail-closed rules
 src/styles/tokens.css   The single source of token values in the codebase
 src/styles/global.css   Reset, base typography, focus, layout primitives, motion
 src/layouts/BaseLayout.astro  Document head, metadata, JSON-LD, landmarks, skip link
 src/components/         Wordmark, header, footer, button, card, offer card, field,
                         notice, step list, section/page intro, systems graphic,
-                        WhatsApp affordance
-src/pages/              The nine routes
-tests/unit/             Content invariants, token contrast, rendered-page checks
-tests/e2e/              Navigation, content, and accessibility suites
+                        WhatsApp affordance, error summary
+src/pages/              Eight prerendered routes plus the server-rendered
+                        /contact/ endpoint and the static /contact/sent/ page
+tests/unit/             Content invariants, token contrast, rendered-page checks,
+                        the validation matrix, and the endpoint pipeline
+tests/e2e/              Navigation, content, accessibility, and contact-form suites
 ```
 
-Content model: page copy lives in the `.astro` pages, while every founder-approved fact — contact details, offer names, prices, deliverables, inclusions, exclusions — lives in `src/lib/site.ts` and is asserted by `tests/unit/content-invariants.test.ts`. Changing a price or contact detail without approval fails CI.
+Content model: page copy lives in the `.astro` pages, while every founder-approved fact — contact details, offer names, prices, deliverables, inclusions, exclusions — lives in `src/lib/site.ts` and is asserted by `tests/unit/content-invariants.test.ts` and `tests/unit/contact-validation.test.ts`. Changing a price or contact detail without approval fails CI.
 
-Client JavaScript: none. No page ships a script bundle; the only inline script is the JSON-LD block, which is data rather than behaviour. The navigation fits without a menu toggle at every tested width, so no mobile menu script was needed.
+Client JavaScript: none authored by this project. The only inline script is the JSON-LD block (data, not behaviour), with one sanctioned exception recorded as D-015: `/contact/` loads Cloudflare's Turnstile script (`challenges.cloudflare.com`) because spam protection was founder-approved (D-007) and Turnstile cannot verify anything without it. The form itself works without any first-party script — it is a plain HTML form POST.
 
 Fonts: `Newsreader` 500 and variable `Manrope`, latin WOFF2 subsets only, self-hosted from `/fonts/` with their SIL Open Font License files committed alongside. No third-party runtime font request is made; a unit test asserts this for every built page.
 
+Build output: `dist/client/` holds the prerendered pages and static assets, and `dist/server/` holds the Workers entry for the `/contact/` route. `astro preview` serves both locally in the workerd runtime.
+
 ## Contact flow
 
-**Gate 3 status:** steps 2–5 do not exist yet. `/contact/` renders the enquiry structure inside a `disabled` fieldset with a notice explaining that submissions are not being accepted, so nothing is presented as working when it is not. Email and WhatsApp are the live channels and are placed above the form. Building the endpoint is Gate 4 work.
+**Gate 4 status: implemented and locally verified; delivery with real credentials is the remaining founder step.** `/contact/` is a server-rendered route that both renders the form (GET) and processes submissions (POST). A fully valid submission produces `303 → /contact/sent/` (PRG), so the success state survives refresh and no data lives in the URL.
 
-1. `GET /contact/` — the static page renders the form with a Turnstile widget.
-2. `POST` (same origin) — the server endpoint receives the submission.
-3. Server checks in order: honeypot → Turnstile token verification → field validation → length limits.
-4. On success: an email is sent through Resend to the approved address with reply-to set to the submitter; the visitor sees a generic confirmation. Nothing is stored.
-5. On validation failure: accessible per-field errors; on system failure: a generic error with no internal details.
+1. `GET /contact/` — the page renders the enabled form with a Turnstile widget. If `PUBLIC_TURNSTILE_SITEKEY` is not configured, the form instead renders visibly disabled with an explanatory notice and email/WhatsApp above it stay live — no deployment can present a form that pretends to work (D-011's rule, retained for misconfiguration).
+2. `POST /contact/` (same origin) — Astro's built-in `checkOrigin` (default on, verified by tests) rejects form POSTs whose `Origin` is missing or foreign with `403` before the endpoint logic runs. Requests with a non-form content type get `415`; unparseable bodies get `400`; other methods get `405`.
+3. Server checks in order (asserted by unit tests): honeypot → Turnstile verification → field validation → delivery. A filled honeypot returns the same success redirect as a real submission while doing nothing — bots get no signal, and no network call is spent on them.
+4. On success: an email is sent through Resend to the approved address with `reply_to` set to the submitter; the visitor is redirected to `/contact/sent/`. Nothing is stored.
+5. On validation failure: the form re-renders with HTTP `422`, an error summary that takes focus and links to each invalid field, per-field errors wired through `aria-describedby` with `aria-invalid`, and every submitted value preserved. On Turnstile failure: the same pattern with `403` and a retry message. On any delivery or configuration failure: `503` with a generic "Your message was not sent" notice, preserved input, and the direct channels — never any internal detail.
 
-Rate limiting and abuse controls: Turnstile plus platform-level protection on the Cloudflare account; the exact mechanism is finalized at Gates 4–5.
+Logging: one structured outcome event per request (`accepted`, `rejected-honeypot`, `rejected-turnstile`, `invalid`, `bad-request`, `system-error`, plus a reason and a request id). A unit test asserts no submitted value, credential, or token ever appears in a log line.
 
-Email sender identity: a professional from-address (for example `hello@therightlifestyle.com`) requires verifying the domain in the email provider — a DNS change reserved for the deployment gate. Until then, free-tier sending restrictions (such as recipient or sender limits before domain verification) are verified during Gate 4 testing and recorded here.
+Rate limiting and abuse controls: Turnstile, the honeypot, origin checking, and platform-level protection on the Cloudflare account. A platform rate-limit binding is a documented Gate 5 candidate; it needs no application storage today because there is no data store by design.
+
+## Email delivery and free-tier restrictions (recorded per D-007)
+
+Verified from Resend's published documentation and pricing (2026-09-17; no account exists yet, so nothing below was verified against a live account — that happens at the deployment gate):
+
+- Free tier: **3,000 emails/month with a 100/day cap**, one custom domain, 30-day log retention. Both the daily cap and the monthly cap are far above expected Phase 1 lead volume.
+- All accounts are rate-limited to **2 requests per second** on the send API; the endpoint's single-send-per-request pattern stays well within it.
+- **Before a sending domain is verified**, mail can only be sent from Resend's default address (`onboarding@resend.dev`), and free accounts are restricted to sending to the account owner's own email address. Because the approved destination (D-003) is the founder's own Gmail address, the restriction is expected to be compatible — this must be confirmed with the real account, since Resend's dashboard also has a per-account "restrict to your own email" setting.
+- Consequences for this project: the site can go live on the free tier with `RESEND_FROM_EMAIL=onboarding@resend.dev` while the founder verifies `therightlifestyle.com` in Resend (a DNS change, reserved for the deployment gate with explicit founder authorization, D-004/D-006). A professional `hello@therightlifestyle.com` from-address requires that verification.
+
+Sender identity: a professional from-address requires verifying the domain in the email provider — a DNS change reserved for the deployment gate (see above).
 
 ## Data handling
 
@@ -113,24 +137,28 @@ Email sender identity: a professional from-address (for example `hello@therightl
 
 | Environment | Purpose | Status |
 | --- | --- | --- |
-| Local | Development and manual verification | Available — `npm run dev` |
-| CI | Automated checks on every pull request | Created (`.github/workflows/ci.yml`) |
-| Preview | Per-PR Cloudflare Pages previews | From the deployment gate onward |
+| Local | Development and manual verification | Available — `npm run dev` reads `.dev.vars` (dummy Turnstile keys from `.dev.vars.example`, no delivery config) |
+| CI | Automated checks on every pull request | Created (`.github/workflows/ci.yml`); the e2e job forces the same dummy-key environment |
+| Preview | Per-PR Cloudflare previews of the real deployment | From the deployment gate onward |
 | Production | Public site on the founder-approved domain | Only after Gate 8 approval |
 
-Environment variables (all server-side or build-time, never committed; names finalized at implementation):
+Environment variables (all server-side or build-time, never committed):
 
 | Variable | Purpose |
 | --- | --- |
-| `PUBLIC_SITE_URL` | Canonical production URL for metadata and the sitemap |
-| `RESEND_API_KEY` | Email delivery credential |
-| `CONTACT_TO_EMAIL` | Approved destination address |
-| `RESEND_FROM_EMAIL` | Verified sender address |
+| `PUBLIC_SITE_URL` | Build-time: canonical production URL for metadata and the sitemap |
+| `PUBLIC_TURNSTILE_SITEKEY` | Runtime: Turnstile sitekey rendered into the contact form (public by nature; read server-side, so it can differ per deployment) |
+| `TURNSTILE_SECRET` | Runtime: secret for server-side token verification (fail-closed if unset) |
+| `RESEND_API_KEY` | Runtime: email delivery credential (fail-closed if unset) |
+| `CONTACT_TO_EMAIL` | Runtime: approved destination address (D-003) |
+| `RESEND_FROM_EMAIL` | Runtime: sender address — `onboarding@resend.dev` until the domain is verified |
+
+Runtime variables are read through `import { env } from 'cloudflare:workers'`, never from `import.meta.env`, so a deployment is configured entirely in the hosting platform. `.dev.vars` (gitignored, copied from `.dev.vars.example`) supplies them locally.
 
 ## Test strategy
 
-- Unit (Vitest): content invariants that fail if prices, contact details, offers, or routes deviate from approved values; design-token values and recomputed contrast ratios; and structural/accessibility checks run with axe-core and jsdom against the real build output. Form validation rules join this suite at Gate 4.
-- E2E (Playwright): core navigation and landmarks, offer and contact content, the 404 and robots/sitemap responses, keyboard and skip-link behaviour, 320px reflow, target size, reduced motion, no-CSS resilience, and axe runs on every route. The form happy path with email delivery mocked joins this suite at Gate 4.
+- Unit (Vitest): content invariants that fail if prices, contact details, offers, or routes deviate from approved values; design-token values and recomputed contrast ratios; structural/accessibility checks with axe-core and jsdom over the real build output; the complete form-validation matrix with exact boundary values; and the whole POST pipeline with injected fakes for Turnstile, delivery, and logging — ordering, fail-closed behaviour, the exact email payload, log hygiene, and status codes are all asserted without a network. The real network calls are thin `fetch` wrappers whose contracts the fakes mirror.
+- E2E (Playwright): core navigation and landmarks, offer and contact content, the 404 and robots/sitemap responses, keyboard and skip-link behaviour, 320px reflow, target size, reduced motion, no-CSS resilience, and axe runs on every route — including the form's error states. The contact-form suite runs the real flow in a browser against the production build with Cloudflare's published dummy Turnstile keys and no delivery configuration: verification genuinely passes through Cloudflare's siteverify, validation errors come from the real server, and a fully valid submission reaches the delivery boundary and produces the honest generic failure state. Email delivery itself is never exercised in e2e — a server-side outbound call cannot be intercepted by Playwright, and adding a delivery-mock mode reachable in production was rejected as a security regression (D-016); delivery with real credentials is verified manually at the deployment gate.
 - CI (GitHub Actions): `npm ci` → typecheck (`astro check`) → build → unit → e2e, plus a dependency audit, on every pull request.
 - Accessibility: axe runs in both suites; a manual keyboard, zoom, and screen-reader pass before launch.
 
