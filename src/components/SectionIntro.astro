@@ -1,0 +1,29 @@
+---
+interface Props {
+  eyebrow?: string;
+  heading: string;
+  lead?: string;
+  /** Heading level; sections default to h2. */
+  level?: 2 | 3;
+  id?: string;
+}
+
+const { eyebrow, heading, lead, level = 2, id } = Astro.props;
+const Heading = `h${level}` as 'h2' | 'h3';
+---
+
+<div class="section-intro">
+  {eyebrow && <span class="eyebrow">{eyebrow}</span>}
+  <Heading id={id}>{heading}</Heading>
+  {lead && <p class="lead section-intro__lead">{lead}</p>}
+</div>
+
+<style>
+  .section-intro {
+    max-width: 44rem;
+  }
+
+  .section-intro__lead {
+    margin-block-start: var(--space-4);
+  }
+</style>

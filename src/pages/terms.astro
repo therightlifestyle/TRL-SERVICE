@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Notice from '../components/Notice.astro';
+import PageIntro from '../components/PageIntro.astro';
+import { contact, site } from '../lib/site';
+---
+
+<BaseLayout
+  title="Terms"
+  description="The terms on which the TRL website is provided and how engagement terms are agreed."
+  noindex
+>
+  <PageIntro
+    eyebrow="Legal"
+    heading="Terms"
+    lead="This page describes how the site and engagements work today. It has not been reviewed by a lawyer and is not yet a finalised set of terms."
+  />
+
+  <section class="section">
+    <div class="container container--reading legal stack-6">
+      <Notice tone="warning" heading="Draft — pending legal review">
+        <p>
+          The text below is a truthful description of current practice. It is published
+          as a draft and will be replaced with reviewed terms before the site is
+          promoted publicly. Status: draft. Effective date: not yet set.
+        </p>
+      </Notice>
+
+      <h2>About this site</h2>
+      <p>
+        This website is published by {site.legalName} ({site.name}). Its content
+        describes services we offer and is provided for information. It is not
+        professional legal, financial, tax, or employment advice.
+      </p>
+
+      <h2>Accuracy of content</h2>
+      <p>
+        We aim to keep descriptions and prices accurate and current. Prices shown on the
+        offers page apply to the engagements described there; anything outside them is
+        quoted individually. We may update content and prices, and the version you agree
+        in writing is the one that applies to your engagement.
+      </p>
+
+      <h2>No contract from the website alone</h2>
+      <p>
+        Nothing on this site is an offer capable of acceptance. An engagement begins only
+        when we agree a written scope with you and you confirm it. That written scope,
+        together with the deliverables, inclusions, and exclusions stated in it, governs
+        the work.
+      </p>
+
+      <h2>Enquiries</h2>
+      <p>
+        Please do not send confidential material or credentials in a first enquiry. We do
+        not publish a guaranteed response time.
+      </p>
+
+      <h2>Third-party tools and costs</h2>
+      <p>
+        Engagements often use third-party software and services. Those are provided under
+        their own terms and billed by those providers directly to you unless a written
+        scope says otherwise.
+      </p>
+
+      <h2>Intellectual property</h2>
+      <p>
+        The content of this site belongs to {site.legalName}. Ownership of work produced
+        in an engagement is set out in the written scope for that engagement.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about these terms go to
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .legal h2 {
+    margin-block-start: var(--space-8);
+    font-size: var(--text-h3);
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+</style>

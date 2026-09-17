@@ -1,0 +1,198 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Field from '../components/Field.astro';
+import Notice from '../components/Notice.astro';
+import PageIntro from '../components/PageIntro.astro';
+import { contact, mailtoLink, offers, whatsappLink } from '../lib/site';
+
+/*
+ * Gate 3 is the static site. The server endpoint that receives this form —
+ * with Turnstile verification, server-side validation, and email delivery — is
+ * Gate 4 work (docs/TRL_ARCHITECTURE.md). Until that endpoint exists the form
+ * is rendered in an explicitly disabled state with a status notice, so no
+ * control is presented as working when it does not. Email and WhatsApp are the
+ * live channels today and are shown before the form, never behind it.
+ */
+const serviceOptions = [
+  { value: '', label: 'Choose one' },
+  ...offers.map((offer) => ({ value: offer.id, label: offer.name })),
+  { value: 'general', label: 'General enquiry' },
+];
+---
+
+<BaseLayout
+  title="Contact"
+  description="Contact TRL by email at officialtrlservice@gmail.com or on WhatsApp at +92 3190091457 to discuss AI automation and business systems for your business."
+  whatsappMessage="Hello TRL, I would like to discuss a workflow in my business: "
+>
+  <PageIntro
+    eyebrow="Contact"
+    heading="Describe the workflow. We will tell you honestly whether we can help."
+    lead="Messages reach the founder directly. Include what the process is, roughly how often it happens, and what it costs you in time."
+  />
+
+  <section class="section contact__channels" aria-labelledby="channels-heading">
+    <div class="container">
+      <h2 id="channels-heading">Direct channels</h2>
+      <div class="grid grid--2 channels__grid">
+        <article class="channel">
+          <h3>WhatsApp</h3>
+          <p class="muted">Fastest for a short question or a quick description.</p>
+          <p>
+            <a
+              class="channel__link"
+              href={whatsappLink(
+                'Hello TRL, I would like to discuss a workflow in my business: ',
+              )}
+            >
+              {contact.whatsappNumber}
+            </a>
+          </p>
+        </article>
+
+        <article class="channel">
+          <h3>Email</h3>
+          <p class="muted">Better for detail, documents, or a written scope.</p>
+          <p>
+            <a class="channel__link" href={mailtoLink('Enquiry via the TRL website')}>
+              {contact.email}
+            </a>
+          </p>
+        </article>
+      </div>
+      <p class="text-small muted channels__note">
+        We do not publish a guaranteed response time, because we are not yet in a
+        position to promise one honestly.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="form-heading">
+    <div class="container container--reading stack-8">
+      <div class="stack">
+        <h2 id="form-heading">Enquiry form</h2>
+        <p class="muted">
+          The form below is the enquiry structure we will use. Its submission handling
+          is not built yet, so the fields are disabled and it cannot be sent — please
+          use WhatsApp or email above in the meantime.
+        </p>
+      </div>
+
+      <Notice tone="warning" heading="This form is not accepting submissions yet">
+        <p>
+          Sending is handled by a server step that is still being built. Nothing you
+          type here would reach us, so the fields are switched off deliberately rather
+          than left looking functional.
+        </p>
+      </Notice>
+
+      <form class="form" novalidate>
+        <fieldset class="form__fieldset" disabled>
+          <legend class="visually-hidden">Enquiry details</legend>
+
+          <Field id="name" name="name" label="Your name" required maxlength={120} autocomplete="name" />
+
+          <Field
+            id="email"
+            name="email"
+            label="Email address"
+            type="email"
+            required
+            maxlength={200}
+            autocomplete="email"
+            hint="We reply to this address."
+          />
+
+          <Field
+            id="service"
+            name="service"
+            label="Service of interest"
+            type="select"
+            required
+            options={serviceOptions}
+          />
+
+          <Field
+            id="message"
+            name="message"
+            label="What would you like to change?"
+            type="textarea"
+            required
+            minlength={20}
+            maxlength={4000}
+            hint="Describe the workflow, how often it runs, and what it currently costs you."
+          />
+
+          <Field
+            id="phone"
+            name="phone"
+            label="WhatsApp or phone"
+            type="tel"
+            maxlength={40}
+            autocomplete="tel"
+          />
+
+          <Field
+            id="business"
+            name="business"
+            label="Business name"
+            maxlength={120}
+            autocomplete="organization"
+          />
+
+          <p class="text-small muted">
+            We use what you send only to answer your enquiry. See the
+            <a href="/privacy/">privacy page</a>.
+          </p>
+        </fieldset>
+      </form>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .contact__channels h2 {
+    max-width: 24ch;
+  }
+
+  .channels__grid {
+    margin-block-start: var(--space-8);
+  }
+
+  .channel {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    background-color: var(--color-surface);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+  }
+
+  .channel__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    font-size: var(--text-lead);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    overflow-wrap: anywhere;
+  }
+
+  .channels__note {
+    margin-block-start: var(--space-6);
+  }
+
+  .form__fieldset {
+    display: grid;
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  /* Disabled state is visibly and semantically inert, never mistakable for live. */
+  .form__fieldset[disabled] {
+    opacity: 0.75;
+  }
+</style>

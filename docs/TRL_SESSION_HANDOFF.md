@@ -4,58 +4,67 @@ _Last updated: 2026-09-17_
 
 ## Current status
 
-Gate 2 — Design System is complete and recorded. The founder confirmed a quiet-authority, light-first direction using a text-only TRL wordmark and abstract systems graphics. The complete typography, palette, spacing, layout, component, state, responsive, motion, and accessibility contract is in `TRL_DESIGN_SYSTEM.md`. No application code exists yet.
+Gate 3 — Core Website is complete. The Astro static site is built and implements the Gate 2 design system: all nine routes render with truthful content, approved pricing and contact details, semantic structure, metadata, and SEO foundations. CI runs typecheck, build, unit, end-to-end, and dependency-audit jobs on every pull request. The contact form's submission endpoint does not exist yet and the form ships deliberately disabled; email and WhatsApp are the live channels.
 
 ## Current phase and gate
 
 Phase 1 — Professional service foundation and commercial entry point.
 
-Completed: Gate 0 — Repository Reset; Gate 1 — Architecture; Gate 2 — Design System.
+Completed: Gate 0 — Repository Reset; Gate 1 — Architecture; Gate 2 — Design System; Gate 3 — Core Website.
 
-Active gate for the next session: **Gate 3 — Core Website**.
+Active gate for the next session: **Gate 4 — Business Flow**.
 
 ## Completed this session
 
-- Verified the merged Gate 1 baseline at merge commit `634e385` on the Arena session branch.
-- Obtained founder confirmation for all four Gate 2 visual inputs: quiet authority, light-first, text wordmark, and abstract systems graphics.
-- Created `TRL_DESIGN_SYSTEM.md` as the implementation source of truth.
-- Defined self-hosted Newsreader/Manrope typography direction and fallbacks; a warm-ivory, deep-ink, restrained-blue semantic palette; spacing, shape, containers, type measures, and layout rules.
-- Defined identity and systems-graphic constraints that prevent invented marks, fabricated interfaces/data, stock imagery, and AI visual clichés.
-- Specified accessible components, form/error behavior, focus treatment, input modes, responsive behavior, reduced motion, and WCAG 2.2 AA acceptance criteria.
-- Recorded decision D-009 and advanced the operating state, execution plan, README, and changelog to Gate 3.
+- Scaffolded Astro 7.3.3 with TypeScript; committed and reviewed `package-lock.json` (299 packages, 0 vulnerabilities).
+- Implemented the token layer and global stylesheet, then the component set: skip link, header/navigation, wordmark, button, card, offer card, section/page intro, step list, notice, form field, footer, WhatsApp affordance, and systems graphics.
+- Built Home, Services, AI Solutions, Offers, About, Contact, Privacy, Terms, and 404.
+- Centralised approved facts in `src/lib/site.ts` and pinned them with content-invariant tests.
+- Added SEO foundations: canonical URLs, per-page metadata, Open Graph, JSON-LD limited to approved facts, robots.txt, and a sitemap excluding the noindex legal drafts.
+- Established `.github/workflows/ci.yml` with verify, e2e, and dependency-review jobs.
+- Wrote 161 unit tests and a Playwright suite covering navigation, content, accessibility, reflow, target size, reduced motion, and no-CSS resilience.
+- Self-hosted the Newsreader and Manrope latin WOFF2 subsets with their OFL licence files.
+- Recorded D-010 through D-013 and advanced the operating state, plan, architecture, design system, README, and changelog.
 
 ## Remaining work
 
-- Gate 3: scaffold Astro with TypeScript, pin/review dependencies, add CI, implement tokens and core components, and build the core static site routes with truthful content and SEO foundations.
-- Gate 4: implement and test the contact endpoint, validation, Turnstile/honeypot, and email delivery path.
+- Gate 4: implement the contact endpoint (server-side validation, honeypot, Turnstile, Resend delivery, generic errors), enable the form with an accessible error summary and success state, and document the qualification-to-repeat workflow.
 - Gates 5–8: production hardening, deployment readiness, final verification, and founder launch approval.
 
 ## Known issues and risks
 
-- No application code, package manifest, lockfile, tests, font files, or CI exists yet.
-- Font files must be obtained from canonical sources, limited to used WOFF2 subsets/weights, self-hosted, and accompanied by license files at Gate 3.
-- Detailed founder biography, credentials, and legal text must not be invented; use only approved facts or request founder review when those content sections are prepared.
-- Email-provider sending restrictions and domain verification remain Gate 4/deployment concerns.
+- **The Playwright suite has not been executed.** Browser binaries could not be downloaded in the authoring sandbox (only the npm registry was reachable), so the e2e job has never run. The suite is written and wired into CI; the first CI run must be checked and any failures fixed before Gate 4 work begins. Static axe-core checks over the build output run in the unit suite as interim cover, but they cannot verify rendered contrast, focus visibility, reflow, or keyboard behaviour.
+- No manual keyboard, zoom, screen-reader, or real-device pass has been performed. Automated checks do not replace this, and it remains required before launch.
+- Page copy was written to be truthful and consistent with the approved brief, but it has not been founder-reviewed. The service descriptions, AI solution catalogue, offer deliverables, and operating principles are all plausible descriptions of intended work rather than founder-dictated text — **the founder should read and correct them.**
+- The Privacy and Terms pages are drafts describing current practice, labelled as such and set to `noindex`. They are not reviewed legal text.
+- No detailed founder biography or credentials are published, because none are approved.
+- Email-provider sending restrictions and sender-domain verification remain Gate 4 and deployment concerns.
 - Analytics, legal text, payment provider, and public launch timing remain open founder decisions.
 
 ## Decisions recorded
 
 - D-005–D-008: Astro stack, Cloudflare Pages, email-only contact delivery, and full core site scope.
 - D-009: quiet-authority, light-first design system with text wordmark and abstract systems graphics.
+- D-010: the site ships zero client JavaScript, so no mobile menu toggle was built.
+- D-011: the contact form ships disabled until its endpoint exists.
+- D-012: `--color-border` darkened from `#7C8C96` to `#6F7F89` for non-text contrast.
+- D-013: legal pages ship as labelled, noindex drafts.
 
 ## Verification
 
-- Documentation-only change; no application tests exist yet.
-- `git diff --check` and documentation consistency checks completed before commit.
-- Palette contrast values independently calculated for the approved semantic color pairings; implementation still requires automated and manual accessibility verification.
-- No application code, generated imagery, accounts, credentials, DNS, or infrastructure were created.
+- `astro check`: 0 errors, 0 warnings, 0 hints across 25 files.
+- `astro build`: 9 pages built; sitemap generated.
+- `npm run test:unit`: 161 tests passing across 3 files, including axe-core structural checks on every built page.
+- `npm audit`: 0 vulnerabilities, production and full trees.
+- Every contrast ratio documented in `TRL_DESIGN_SYSTEM.md` recomputed from the token values; three previously estimated figures were corrected and one failing pairing was fixed (D-012).
+- `npm run test:e2e`: **not executed** — see the risk above.
+- No accounts, credentials, DNS changes, deployments, or generated imagery were created.
 
 ## Git
 
-- Branch: `arena/01a0af89-trl-service`
-- Commit: `docs: define gate 2 design system`
-- Pull request: [#3 — Gate 2: define the founder-approved design system](https://github.com/therightlifestyle/TRL-SERVICE/pull/3)
+- Branch: `arena/01a0afa6-trl-service`
+- Commit: `feat: build gate 3 core website`
 
 ## NEXT SINGLE ACTION
 
-Begin Gate 3 by scaffolding the smallest Astro + TypeScript project, pinning and reviewing the lockfile, adding the global token layer and core layout primitives from `TRL_DESIGN_SYSTEM.md`, and establishing CI before building the core page content.
+Check the first CI run on the Gate 3 pull request, fix any failure in the Playwright end-to-end job (which has never executed locally), and only then begin Gate 4 by implementing the contact endpoint.

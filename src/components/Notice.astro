@@ -1,0 +1,72 @@
+---
+interface Props {
+  tone?: 'info' | 'success' | 'warning' | 'error';
+  heading?: string;
+  /** Live-region role for dynamically revealed messages. */
+  role?: 'status' | 'alert';
+  id?: string;
+}
+
+const { tone = 'info', heading, role, id } = Astro.props;
+const toneWord = { info: 'Note', success: 'Success', warning: 'Warning', error: 'Error' }[
+  tone
+];
+---
+
+<div class:list={['notice', `notice--${tone}`]} role={role} id={id}>
+  <p class="notice__tone text-small"><strong>{toneWord}</strong></p>
+  {heading && <p class="notice__heading"><strong>{heading}</strong></p>}
+  <div class="notice__body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  /* Tone is carried by a word as well as colour and boundary — never colour alone. */
+  .notice {
+    padding: var(--space-4) var(--space-6);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-inline-start-width: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .notice > * + * {
+    margin-block-start: var(--space-2);
+  }
+
+  .notice__tone {
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .notice--info {
+    background-color: var(--color-accent-soft);
+    border-inline-start-color: var(--color-action);
+  }
+
+  .notice--info .notice__tone {
+    color: var(--color-action);
+  }
+
+  .notice--success {
+    border-inline-start-color: var(--color-success);
+  }
+
+  .notice--success .notice__tone {
+    color: var(--color-success);
+  }
+
+  .notice--warning {
+    background-color: var(--color-surface-muted);
+    border-inline-start-color: var(--color-ink);
+  }
+
+  .notice--error {
+    border-inline-start-color: var(--color-danger);
+  }
+
+  .notice--error .notice__tone {
+    color: var(--color-danger);
+  }
+</style>

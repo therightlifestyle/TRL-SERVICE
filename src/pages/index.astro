@@ -1,0 +1,254 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import Card from '../components/Card.astro';
+import OfferCard from '../components/OfferCard.astro';
+import SectionIntro from '../components/SectionIntro.astro';
+import StepList from '../components/StepList.astro';
+import SystemsGraphic from '../components/SystemsGraphic.astro';
+import {
+  contact,
+  engagementSteps,
+  offers,
+  principles,
+  serviceAreas,
+  site,
+  whatsappLink,
+} from '../lib/site';
+---
+
+<BaseLayout
+  title="AI automation and business systems"
+  description="TRL builds AI automation, custom assistants, and operating systems for small business owners who have become the bottleneck in their own business."
+>
+  <section class="hero">
+    <div class="container container--wide grid grid--split">
+      <div>
+        <span class="eyebrow">AI automation and business systems</span>
+        <h1 class="hero__title">
+          We don't sell AI tools. We build business systems that give owners their
+          time back.
+        </h1>
+        <p class="lead hero__lead">
+          {site.name} designs and builds the automations, assistants, and operating
+          structure that take repetitive work off the founder's desk — starting with
+          one workflow, not a company-wide rebuild.
+        </p>
+        <div class="hero__actions">
+          <Button href="/offers/" fullWidthOnMobile>See the offers</Button>
+          <Button href="/contact/" variant="secondary" fullWidthOnMobile>
+            Start a conversation
+          </Button>
+        </div>
+      </div>
+      <SystemsGraphic variant="route" class="hero__graphic" />
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="problem-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="The situation"
+        heading="The work is not too hard. There is just too much of it going through one person."
+        id="problem-heading"
+        lead="Most small businesses do not have a strategy problem. They have a throughput problem, and the founder is the constraint."
+      />
+      <div class="grid grid--2 problem__grid">
+        <div class="stack">
+          <h3>What it looks like</h3>
+          <ul class="list">
+            <li>The same information is typed into three different places.</li>
+            <li>Enquiries wait because one person has not read the inbox yet.</li>
+            <li>Quotes, onboarding, and follow-ups depend on someone remembering.</li>
+            <li>Nothing can be delegated because nothing is written down.</li>
+          </ul>
+        </div>
+        <div class="stack">
+          <h3>What changes</h3>
+          <ul class="list">
+            <li>The routine path through the work runs without being pushed.</li>
+            <li>Repeat questions get a consistent answer from your own material.</li>
+            <li>Follow-up happens on schedule instead of on memory.</li>
+            <li>The structure is documented, so it can be handed to someone else.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="services-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="Services"
+        heading="Four areas of work"
+        id="services-heading"
+        lead="Each area starts with how the work actually moves today, not with a tool we would like to sell you."
+      />
+      <div class="grid grid--2 section__body">
+        {
+          serviceAreas.map((area) => (
+            <Card title={area.title} href="/services/" linkLabel="Read how this works">
+              <p class="muted">{area.problem}</p>
+              <p>{area.capability}</p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="process-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="How an engagement runs"
+        heading="Scope first, build second, handover always"
+        id="process-heading"
+      />
+      <div class="section__body">
+        <StepList steps={engagementSteps} />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="offers-heading">
+    <div class="container container--wide">
+      <SectionIntro
+        eyebrow="Offers"
+        heading="Three ways to start"
+        id="offers-heading"
+        lead="Start small and prove the value, or go straight to the wider engagement if you already know the shape of the problem."
+      />
+      <div class="grid grid--3 section__body">
+        {offers.map((offer) => <OfferCard offer={offer} />)}
+      </div>
+      <p class="section__footnote">
+        <a href="/offers/">Compare the offers in full</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--muted" aria-labelledby="trust-heading">
+    <div class="container">
+      <SectionIntro
+        eyebrow="How we operate"
+        heading="What we can honestly tell you today"
+        id="trust-heading"
+        lead="TRL is new. Instead of borrowed credibility, here is exactly how we work and what we will not do."
+      />
+      <div class="section__body">
+        <StepList steps={principles} numbered={false} />
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--ink on-ink" aria-labelledby="cta-heading">
+    <div class="container container--reading cta">
+      <h2 id="cta-heading" class="cta__heading">
+        Tell us which part of the week costs you the most.
+      </h2>
+      <p class="cta__lead">
+        Describe the workflow in a message. If TRL is not the right answer, we will
+        say so rather than sell you the nearest offer.
+      </p>
+      <div class="cta__actions">
+        <Button href="/contact/" fullWidthOnMobile>Contact TRL</Button>
+        <Button
+          href={whatsappLink(
+            'Hello TRL, the part of my week that costs me the most is: ',
+          )}
+          variant="secondary"
+          fullWidthOnMobile
+        >
+          Message on WhatsApp
+        </Button>
+      </div>
+      <p class="text-small cta__note">
+        Or email <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: var(--section-block);
+  }
+
+  .hero__title {
+    font-size: var(--text-hero);
+    line-height: var(--leading-hero);
+    letter-spacing: -0.04em;
+    max-width: 18ch;
+  }
+
+  .hero__lead {
+    margin-block-start: var(--space-6);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block-start: var(--space-8);
+  }
+
+  .hero__graphic {
+    margin-block-start: var(--space-12);
+  }
+
+  @media (min-width: 64rem) {
+    .hero__graphic {
+      margin-block-start: var(--space-4);
+    }
+  }
+
+  .section__body {
+    margin-block-start: var(--space-12);
+  }
+
+  .problem__grid {
+    margin-block-start: var(--space-12);
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+    max-width: var(--measure-body);
+  }
+
+  .section__footnote {
+    margin-block-start: var(--space-8);
+    font-weight: 600;
+  }
+
+  .cta__heading {
+    max-width: 20ch;
+  }
+
+  .cta__lead {
+    margin-block-start: var(--space-4);
+    max-width: var(--measure-lead);
+    font-size: var(--text-lead);
+    line-height: var(--leading-lead);
+    color: var(--color-accent-soft);
+  }
+
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-block-start: var(--space-8);
+  }
+
+  .cta__note {
+    margin-block-start: var(--space-6);
+    color: var(--color-accent-soft);
+  }
+
+  .cta__note a {
+    color: var(--color-canvas);
+    overflow-wrap: anywhere;
+  }
+</style>

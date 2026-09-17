@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Notice from '../components/Notice.astro';
+import PageIntro from '../components/PageIntro.astro';
+import { contact, site } from '../lib/site';
+---
+
+<BaseLayout
+  title="Privacy"
+  description="How TRL handles the information you send through its contact channels."
+  noindex
+>
+  <PageIntro
+    eyebrow="Legal"
+    heading="Privacy"
+    lead="This page describes current practice in plain language. It has not been reviewed by a lawyer and is not yet a finalised privacy policy."
+  />
+
+  <section class="section">
+    <div class="container container--reading legal stack-6">
+      <Notice tone="warning" heading="Draft — pending legal review">
+        <p>
+          The text below is a truthful description of how {site.name} handles
+          information today. It is published as a draft and will be replaced with a
+          reviewed policy before the site is promoted publicly. Status: draft. Effective
+          date: not yet set.
+        </p>
+      </Notice>
+
+      <h2>Who is responsible</h2>
+      <p>
+        {site.legalName} ({site.name}), contactable at
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>, decides how information
+        sent through this site is handled.
+      </p>
+
+      <h2>What this site collects</h2>
+      <p>
+        The site itself sets no analytics or tracking cookies and runs no advertising or
+        third-party tracking scripts. Fonts are served from this site's own domain, so
+        viewing a page does not send a request to a font provider.
+      </p>
+      <p>
+        The enquiry form is not accepting submissions yet. When it is, it will collect
+        only the fields shown on the contact page: your name, email address, service of
+        interest, message, and optionally a phone number and business name.
+      </p>
+
+      <h2>What happens to an enquiry</h2>
+      <p>
+        Enquiries sent by email or WhatsApp arrive in the founder's inbox or WhatsApp
+        account and are used only to answer you and, if you engage us, to carry out the
+        work. There is no customer database, CRM, or mailing list behind this site.
+      </p>
+      <p>
+        Email and WhatsApp are operated by their own providers under their own terms;
+        messages you send through them are handled by those providers as well as by us.
+      </p>
+
+      <h2>Keeping and deleting information</h2>
+      <p>
+        Correspondence is kept for as long as it is useful for the enquiry or engagement
+        it relates to. You can ask us to delete your correspondence at any time by
+        emailing <a href={`mailto:${contact.email}`}>{contact.email}</a>, and we will
+        delete it unless we are required to keep it.
+      </p>
+
+      <h2>Hosting and security measures</h2>
+      <p>
+        The site is served over HTTPS. Hosting arrangements and any spam-protection
+        service used by the future enquiry form will be named here once they are in
+        place.
+      </p>
+
+      <h2>Questions</h2>
+      <p>
+        Ask anything about this page at
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .legal h2 {
+    margin-block-start: var(--space-8);
+    font-size: var(--text-h3);
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+</style>

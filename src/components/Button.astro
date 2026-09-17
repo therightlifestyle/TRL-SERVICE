@@ -1,0 +1,131 @@
+---
+/**
+ * Button / call-to-action primitive.
+ *
+ * Renders an anchor when `href` is supplied and a real <button> otherwise.
+ * Never used to render an inactive or placeholder control.
+ */
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit';
+  variant?: 'primary' | 'secondary';
+  fullWidthOnMobile?: boolean;
+  rel?: string;
+  target?: string;
+  class?: string;
+  'data-testid'?: string;
+}
+
+const {
+  href,
+  type = 'button',
+  variant = 'primary',
+  fullWidthOnMobile = false,
+  rel,
+  target,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const classes = [
+  'button',
+  `button--${variant}`,
+  fullWidthOnMobile ? 'button--fluid' : null,
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{
+  href ? (
+    <a class={classes} href={href} rel={rel} target={target} {...rest}>
+      <slot />
+    </a>
+  ) : (
+    <button class={classes} type={type} {...rest}>
+      <slot />
+    </button>
+  )
+}
+
+<style>
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: var(--control-height);
+    min-width: var(--target-min);
+    padding: var(--space-3) var(--space-6);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-body);
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-default) var(--ease-default),
+      border-color var(--duration-default) var(--ease-default),
+      color var(--duration-default) var(--ease-default);
+  }
+
+  .button--primary {
+    background-color: var(--color-action);
+    border-color: var(--color-action);
+    color: #ffffff;
+  }
+
+  .button--secondary {
+    background-color: transparent;
+    border-color: var(--color-ink);
+    color: var(--color-ink);
+  }
+
+  @media (hover: hover) {
+    .button--primary:hover {
+      background-color: var(--color-action-hover);
+      border-color: var(--color-action-hover);
+    }
+
+    .button--secondary:hover {
+      border-color: var(--color-action);
+      color: var(--color-action-hover);
+    }
+  }
+
+  .button--primary:active {
+    background-color: var(--color-action-hover);
+  }
+
+  .button--secondary:active {
+    background-color: var(--color-accent-soft);
+  }
+
+  /* On the ink surface the secondary outline flips to the light canvas colour. */
+  :global(.section--ink) .button--secondary,
+  :global(.on-ink) .button--secondary {
+    border-color: var(--color-canvas);
+    color: var(--color-canvas);
+  }
+
+  @media (hover: hover) {
+    :global(.section--ink) .button--secondary:hover,
+    :global(.on-ink) .button--secondary:hover {
+      border-color: var(--color-accent-soft);
+      color: var(--color-accent-soft);
+    }
+  }
+
+  .button--fluid {
+    width: 100%;
+  }
+
+  @media (min-width: 40rem) {
+    .button--fluid {
+      width: auto;
+    }
+  }
+</style>

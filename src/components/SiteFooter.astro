@@ -1,0 +1,142 @@
+---
+import Wordmark from './Wordmark.astro';
+import { contact, legalNavigation, navigation, site, whatsappLink } from '../lib/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer on-ink">
+  <div class="container container--wide site-footer__inner">
+    <div class="site-footer__identity">
+      <Wordmark as="text" />
+      <p class="text-small site-footer__note">
+        AI automation and business systems for owners who are the bottleneck.
+      </p>
+    </div>
+
+    <nav class="site-footer__nav" aria-label="Footer">
+      <h2 class="site-footer__heading">Pages</h2>
+      <ul class="site-footer__list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="site-footer__contact">
+      <h2 class="site-footer__heading">Contact</h2>
+      <ul class="site-footer__list">
+        <li><a href={`mailto:${contact.email}`}>{contact.email}</a></li>
+        <li>
+          <a href={whatsappLink('Hello TRL, I have a question about your services.')}>
+            WhatsApp {contact.whatsappNumber}
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <nav class="site-footer__legal-nav" aria-label="Legal">
+      <h2 class="site-footer__heading">Legal</h2>
+      <ul class="site-footer__list">
+        {
+          legalNavigation.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container container--wide">
+    <p class="text-small site-footer__baseline">
+      © {year} {site.legalName}. {site.name} is a new firm; this site makes no claims
+      of clients, results, or credentials that do not yet exist.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-block-start: var(--space-24);
+    /* The trailing space keeps footer content clear of the fixed WhatsApp affordance. */
+    padding-block: var(--space-16)
+      calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
+    background-color: var(--color-ink);
+    color: var(--color-canvas);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    gap: var(--space-12);
+  }
+
+  .site-footer__note {
+    max-width: 34ch;
+    margin-block-start: var(--space-4);
+    color: var(--color-accent-soft);
+  }
+
+  .site-footer__heading {
+    max-width: none;
+    margin-block-end: var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--text-label);
+    font-weight: 700;
+    line-height: var(--leading-label);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent-soft);
+  }
+
+  .site-footer__list {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    color: var(--color-canvas);
+    font-size: var(--text-small);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    overflow-wrap: anywhere;
+  }
+
+  @media (hover: hover) {
+    .site-footer__list a:hover {
+      color: var(--color-accent-soft);
+    }
+  }
+
+  .site-footer__baseline {
+    max-width: 70ch;
+    margin-block-start: var(--space-12);
+    padding-block-start: var(--space-6);
+    border-block-start: 1px solid color-mix(in srgb, var(--color-canvas) 25%, transparent);
+    color: var(--color-accent-soft);
+  }
+
+  @media (min-width: 40rem) {
+    .site-footer__inner {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .site-footer__inner {
+      grid-template-columns: 2fr 1fr 1.4fr 1fr;
+      gap: var(--space-8);
+    }
+  }
+</style>

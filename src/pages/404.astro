@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import PageIntro from '../components/PageIntro.astro';
+import { navigation } from '../lib/site';
+---
+
+<BaseLayout
+  title="Page not found"
+  description="That address does not exist on the TRL website. Use the links here to reach the services, offers, about, or contact pages."
+  noindex
+>
+  <PageIntro
+    eyebrow="404"
+    heading="That page does not exist"
+    lead="The address may be mistyped, or the page may never have existed. Everything on the site is one step away:"
+  />
+
+  <section class="section">
+    <div class="container container--reading stack-6">
+      <ul class="list">
+        {
+          navigation.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+      <p>
+        <Button href="/" fullWidthOnMobile>Back to the home page</Button>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .list {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding-inline-start: var(--space-6);
+  }
+
+  .list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--target-min);
+    font-weight: 600;
+  }
+</style>
