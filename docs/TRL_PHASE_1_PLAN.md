@@ -56,6 +56,15 @@ Create a truthful, professional, launch-ready foundation for TRL's AI automation
 ### Gate 6 — Deployment Readiness (active)
 
 - Document environment variables, hosting setup, domain readiness, backups, rollback, recovery, and controlled deployment.
+- **Repository-side work: complete.** `TRL_DEPLOYMENT.md` is now an operational
+  runbook (verified deploy path, the complete variable table, rollback/recovery,
+  monitoring, retention); `TRL_GATE6_FOUNDER_CHECKLIST.md` is the ordered action
+  list; the canonical origin is a required build variable instead of an unowned
+  domain (D-021); indexing is off by default with a one-variable switch (D-022);
+  no account-scoped identifier is committed (D-023); `npm run preflight` and a
+  `wrangler deploy --dry-run` CI step validate the deployable artifact on every
+  pull request. **Gate 6 closes when the founder's steps are ticked** — account,
+  first deploy, one real enquiry delivered, rate limiter enforcing.
 
 ### Gate 7 — Final Verification
 

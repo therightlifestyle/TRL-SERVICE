@@ -26,8 +26,10 @@ that the badge, theme, and layout are final but risk behaviour is inert.
 
 ## Scope and environment
 
-Run against the deployed preview on `therightlifestyle.com` (Cloudflare
-Workers). Two passes: one desktop with keyboard + mouse at default zoom, one
+Run against the deployed preview — whatever origin the deployment is on
+(Cloudflare Workers; the interim Stage A host is a `workers.dev` URL, since no
+domain is owned yet). The origin does not affect this pass, but the real Turnstile
+widget only exists on a configured deployment. Two passes: one desktop with keyboard + mouse at default zoom, one
 mobile (real device, ideally one iOS Safari + one Android Chrome) with touch.
 
 Required tooling: a desktop browser with DevTools (Firefox/Chrome/Safari), the

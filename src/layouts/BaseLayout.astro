@@ -3,6 +3,7 @@ import '../styles/global.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import WhatsAppAffordance from '../components/WhatsAppAffordance.astro';
+import { indexingEnabled, robotsMetaContent } from '../lib/indexing';
 import { contact, site } from '../lib/site';
 
 interface Props {
@@ -15,8 +16,22 @@ interface Props {
 
 const { title, description, noindex = false, whatsappMessage } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? site.defaultOrigin);
+/*
+ * The canonical origin comes from the build, never from a committed domain: the
+ * intended domain is not owned, and `astro build` refuses to run without
+ * PUBLIC_SITE_URL (D-021). During `astro dev` no site is configured, so the
+ * request's own origin is used and the preview stays internally consistent.
+ */
+const origin = Astro.site?.origin ?? Astro.url.origin;
+const canonical = new URL(Astro.url.pathname, origin);
 const pageTitle = `${title} — ${site.name} · ${site.legalName}`;
+
+/*
+ * Indexing is off unless the build was explicitly told otherwise (D-022), and a
+ * page-level `noindex` (the legal drafts, the confirmation page) holds either
+ * way — so turning indexing on for the real domain cannot expose a draft.
+ */
+const robots = robotsMetaContent({ indexing: indexingEnabled(), pageNoindex: noindex });
 
 /*
  * JSON-LD is limited to facts approved in docs/TRL_MASTER_CONTEXT.md (D-003).
@@ -27,7 +42,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: site.legalName,
   alternateName: site.name,
-  url: canonical.origin + '/',
+  url: origin + '/',
   email: contact.email,
   telephone: contact.whatsappNumber,
   founder: { '@type': 'Person', name: site.founder },
@@ -44,7 +59,7 @@ const organizationSchema = {
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
-    {noindex && <meta name="robots" content="noindex, follow" />}
+    {robots && <meta name="robots" content={robots} />}
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#F7F4EC" />

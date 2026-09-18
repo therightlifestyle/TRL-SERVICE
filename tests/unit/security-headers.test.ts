@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildOnce } from './helpers/build-once';
+import { DIST, readBuildOrigin } from './helpers/build-artifacts';
 import {
   COMMON_SECURITY_HEADERS,
   CONTACT_PAGE_CSP,
@@ -22,7 +23,8 @@ import {
  * build output and comparing it token-for-token.
  */
 
-const DIST = join(process.cwd(), 'dist', 'client');
+/* The origin this artifact was built with (D-021) — never a hardcoded domain. */
+let ORIGIN = '';
 
 /**
  * Parses a Cloudflare `_headers` file into `{ [pathPattern]: Map<name, value> }`.
@@ -53,6 +55,7 @@ function parseHeadersFile(content: string): Map<string, Map<string, string>> {
 
 beforeAll(() => {
   buildOnce();
+  ORIGIN = readBuildOrigin();
 }, 180_000);
 
 describe('policy contents', () => {
@@ -194,7 +197,7 @@ describe('policy matches what the build actually ships', () => {
       /<(?:script|link|img|iframe|audio|video|source|embed|object|track)[^>]+(?:src|href)="(https?:\/\/[^"]+)"/g;
     const externals = [...html.matchAll(resourceLoader)]
       .map((m) => m[1])
-      .filter((url) => !url.startsWith('https://therightlifestyle.com'));
+      .filter((url) => !url.startsWith(ORIGIN));
     expect(externals, `${page} loads an off-origin resource the CSP would block`).toEqual([]);
   });
 });

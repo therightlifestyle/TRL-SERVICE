@@ -22,7 +22,10 @@ Pricing is founder-approved in the operating brief and must not be changed witho
 
 - WhatsApp: +92 3190091457
 - Email: officialtrlservice@gmail.com
-- Intended primary domain: therightlifestyle.com
+- Intended primary domain: therightlifestyle.com — **intended only. It is not
+  owned, registered, or configured as of Gate 6, so it is never asserted by the
+  build.** The site's canonical origin is the `PUBLIC_SITE_URL` build variable
+  (D-021), which is a real deployment value rather than a public claim.
 
 The founder controls domain, hosting, payment, credential, legal, and public-launch decisions.
 

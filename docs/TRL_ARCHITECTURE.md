@@ -57,13 +57,14 @@ _Last updated: 2026-09-17 (Gate 5 complete; Gate 6 — Deployment Readiness acti
 
 A `/404` page is also built, carrying `noindex` and a list of the core routes. The post-submission confirmation `/contact/sent/` is a static, `noindex` utility page excluded from the sitemap: anyone can land on it directly, so it asserts nothing beyond "if you just sent the form, it worked".
 
-SEO approach: per-page titles and descriptions, semantic HTML, generated sitemap.xml and robots.txt, canonical URLs on the production domain, and JSON-LD organization schema limited to truthful facts.
+SEO approach: per-page titles and descriptions, semantic HTML, generated sitemap.xml and robots.txt, canonical URLs built from the configured origin (never a hardcoded domain — D-021), and JSON-LD organization schema limited to truthful facts. Search-engine visibility is off unless explicitly enabled at build time (D-022).
 
 ## Implemented structure (Gate 4)
 
 ```
-astro.config.mjs        Site origin, static output with the Cloudflare adapter,
-                        trailing slashes, sitemap filter (noindex exclusions)
+astro.config.mjs        Required-site-origin build guard (D-021), static output
+                        with the Cloudflare adapter, trailing slashes, sitemap
+                        filter (noindex exclusions)
 wrangler.jsonc          Anchors local dev config; the adapter generates the real
                         deploy config into dist/server/wrangler.json at build
                         (observability passes through; the rate-limit binding
@@ -74,7 +75,9 @@ package-lock.json       Committed and reviewed; npm ci in CI
 .dev.vars.example       Committed dummy Turnstile keys for local dev and e2e
 .github/workflows/ci.yml  Typecheck, build, unit, e2e, and dependency-audit jobs
 public/fonts/           Self-hosted WOFF2 subsets plus their OFL licence files
-public/robots.txt       Deliberate crawl policy and sitemap pointer
+src/pages/robots.txt.ts Generated crawl policy, derived from the build origin and
+                        the indexing flag (was a committed file until Gate 6)
+src/lib/indexing.ts     Search-engine visibility policy as pure functions (D-022)
 src/env.d.ts            Runtime type of the Workers env (cloudflare:workers)
 src/lib/site.ts         Founder-approved facts: contact, offers, services, solutions
 src/lib/contact.ts      The whole submission pipeline as pure functions:
@@ -130,7 +133,7 @@ Verified from Resend's published documentation and pricing (2026-09-17; no accou
 - Free tier: **3,000 emails/month with a 100/day cap**, one custom domain, 30-day log retention. Both the daily cap and the monthly cap are far above expected Phase 1 lead volume.
 - All accounts are rate-limited to **2 requests per second** on the send API; the endpoint's single-send-per-request pattern stays well within it.
 - **Before a sending domain is verified**, mail can only be sent from Resend's default address (`onboarding@resend.dev`), and free accounts are restricted to sending to the account owner's own email address. Because the approved destination (D-003) is the founder's own Gmail address, the restriction is expected to be compatible — this must be confirmed with the real account, since Resend's dashboard also has a per-account "restrict to your own email" setting.
-- Consequences for this project: the site can go live on the free tier with `RESEND_FROM_EMAIL=onboarding@resend.dev` while the founder verifies `therightlifestyle.com` in Resend (a DNS change, reserved for the deployment gate with explicit founder authorization, D-004/D-006). A professional `hello@therightlifestyle.com` from-address requires that verification.
+- Consequences for this project: the site can go live on the free tier with `RESEND_FROM_EMAIL=onboarding@resend.dev`, which needs no domain at all. A professional from-address (`hello@<domain>`) requires verifying a domain in Resend — a DNS change reserved for the deployment gate with explicit founder authorization (D-004/D-006). No domain is currently owned, so the interim deployment deliberately uses the Resend default address.
 
 Sender identity: a professional from-address requires verifying the domain in the email provider — a DNS change reserved for the deployment gate (see above).
 
@@ -156,7 +159,8 @@ Environment variables (all server-side or build-time, never committed):
 
 | Variable | Purpose |
 | --- | --- |
-| `PUBLIC_SITE_URL` | Build-time: canonical production URL for metadata and the sitemap |
+| `PUBLIC_SITE_URL` | Build-time, **required**: canonical origin for canonical/OG/JSON-LD URLs, the sitemap, and robots.txt. No default — a build fails without it (D-021). Read from `process.env` only, so a `.env` file cannot supply it |
+| `PUBLIC_ALLOW_INDEXING` | Build-time: `true` makes the site indexable; unset or anything else keeps every page `noindex` (D-022) |
 | `PUBLIC_TURNSTILE_SITEKEY` | Runtime: Turnstile sitekey rendered into the contact form (public by nature; read server-side, so it can differ per deployment) |
 | `TURNSTILE_SECRET` | Runtime: secret for server-side token verification (fail-closed if unset) |
 | `RESEND_API_KEY` | Runtime: email delivery credential (fail-closed if unset) |

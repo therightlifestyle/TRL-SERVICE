@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildOnce } from './helpers/build-once';
+import { buildAllowsIndexing, DIST, readBuildOrigin, readRobotsTxt } from './helpers/build-artifacts';
 
 /*
  * Structural and accessibility checks against the real build output.
@@ -19,8 +20,6 @@ import { buildOnce } from './helpers/build-once';
  * Static assets now build to dist/client (the Workers adapter layout).
  */
 
-const DIST = join(process.cwd(), 'dist', 'client');
-
 const pages = [
   { path: 'index.html', route: '/' },
   { path: 'services/index.html', route: '/services/' },
@@ -33,9 +32,11 @@ const pages = [
   { path: '404.html', route: '/404' },
 ];
 
+let ORIGIN = '';
+
 function load(page: string): JSDOM {
   return new JSDOM(readFileSync(join(DIST, page), 'utf8'), {
-    url: `https://therightlifestyle.com${page === 'index.html' ? '/' : `/${page}`}`,
+    url: `${ORIGIN}${page === 'index.html' ? '/' : `/${page}`}`,
     pretendToBeVisual: true,
     runScripts: 'outside-only',
   });
@@ -43,6 +44,7 @@ function load(page: string): JSDOM {
 
 beforeAll(() => {
   buildOnce();
+  ORIGIN = readBuildOrigin();
 }, 180_000);
 
 describe('build output', () => {
@@ -55,6 +57,26 @@ describe('build output', () => {
   it('emits robots.txt and a sitemap index', () => {
     expect(existsSync(join(DIST, 'robots.txt'))).toBe(true);
     expect(existsSync(join(DIST, 'sitemap-index.xml'))).toBe(true);
+  });
+
+  it('states one crawl policy, and never the disallow-and-noindex trap', () => {
+    // Gate 6 (D-022). While indexing is off, crawling must stay ALLOWED: a
+    // `Disallow: /` would stop crawlers from reading the noindex directive that
+    // actually keeps the deployment out of results, and a URL discovered via an
+    // external link could still be listed as "indexed, though blocked by
+    // robots.txt". `Noindex:` in robots.txt is not a directive and is never used.
+    const robots = readRobotsTxt();
+    expect(robots).toContain('User-agent: *');
+    expect(robots).toContain('Allow: /');
+    expect(robots).not.toContain('Disallow');
+    expect(robots).not.toMatch(/^Noindex:/m);
+
+    // The sitemap is advertised only when indexing is on: pointing crawlers at a
+    // sitemap for a site that must not be listed is a contradiction.
+    expect(robots.includes('Sitemap:')).toBe(buildAllowsIndexing());
+    if (buildAllowsIndexing()) {
+      expect(robots).toContain(`Sitemap: ${ORIGIN}/sitemap-index.xml`);
+    }
   });
 
   it('self-hosts the fonts with their licences', () => {
@@ -79,7 +101,7 @@ describe('build output', () => {
       const html = readFileSync(join(DIST, page.path), 'utf8');
       const externals = [...html.matchAll(resourceLoads)]
         .map((match) => match[1])
-        .filter((url) => !url.startsWith('https://therightlifestyle.com'));
+        .filter((url) => !url.startsWith(ORIGIN));
       expect(externals, `${page.path} loads a third-party resource`).toEqual([]);
     }
   });
@@ -91,11 +113,7 @@ describe('build output', () => {
       const html = readFileSync(join(DIST, page.path), 'utf8');
       const anchors = [...html.matchAll(/<a[^>]+href="(https?:\/\/[^"]+)"/g)]
         .map((match) => match[1])
-        .filter(
-          (url) =>
-            !url.startsWith('https://therightlifestyle.com') &&
-            !url.startsWith('https://wa.me/'),
-        );
+        .filter((url) => !url.startsWith(ORIGIN) && !url.startsWith('https://wa.me/'));
 
       if (page.route === '/privacy/') {
         expect(anchors).toEqual(['https://www.cloudflare.com/privacypolicy/']);
@@ -105,13 +123,18 @@ describe('build output', () => {
     }
   });
 
-  it('keeps the legal drafts and the confirmation page out of the sitemap', () => {
+  it('builds the sitemap from the configured origin, without the noindex pages', () => {
     const sitemap = readFileSync(join(DIST, 'sitemap-0.xml'), 'utf8');
-    expect(sitemap).toContain('https://therightlifestyle.com/offers/');
-    expect(sitemap).toContain('https://therightlifestyle.com/contact/');
+    expect(sitemap).toContain(`${ORIGIN}/offers/`);
+    expect(sitemap).toContain(`${ORIGIN}/contact/`);
     expect(sitemap).not.toContain('/privacy/');
     expect(sitemap).not.toContain('/terms/');
     expect(sitemap).not.toContain('/contact/sent/');
+
+    // Every URL in the sitemap belongs to the one configured origin.
+    for (const loc of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      expect(new URL(loc[1]).origin).toBe(ORIGIN);
+    }
   });
 });
 
@@ -129,7 +152,7 @@ describe.each(pages)('$route', ({ path, route }) => {
     expect(description?.length ?? 0).toBeGreaterThan(50);
 
     const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href');
-    expect(canonical).toContain('https://therightlifestyle.com');
+    expect(canonical?.startsWith(ORIGIN)).toBe(true);
   });
 
   it('has landmarks, exactly one h1, and no skipped heading levels', () => {
@@ -160,6 +183,20 @@ describe.each(pages)('$route', ({ path, route }) => {
 
     const wordmark = doc.querySelector('header a[rel="home"]');
     expect(wordmark?.getAttribute('aria-label')).toBe('TRL — The Right Lifestyle');
+  });
+
+  it('carries the indexing policy that matches robots.txt', () => {
+    // Gate 6 (D-022): while indexing is off, every page must say noindex. When it
+    // is on, only the pages that are noindex by design stay excluded — the legal
+    // drafts, the confirmation page, and the 404 document.
+    const { window } = load(path);
+    const robotsMeta =
+      window.document.querySelector('meta[name="robots"]')?.getAttribute('content') ?? null;
+
+    const noindexByDesign = ['/404', '/privacy/', '/terms/', '/contact/sent/'];
+    const expected = !buildAllowsIndexing() || noindexByDesign.includes(route);
+
+    expect(robotsMeta, `${route} indexing state`).toBe(expected ? 'noindex, follow' : null);
   });
 
   it('has no generic link text', () => {

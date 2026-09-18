@@ -1,6 +1,7 @@
 # TRL — Operating State
 
-_Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 6, Deployment Readiness.)_
+_Last updated: 2026-09-19 (Gate 6 — Deployment Readiness: the repository-side work is
+complete and the remaining steps are founder actions. Nothing is deployed.)_
 
 ## Current phase
 
@@ -8,7 +9,7 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 
 ## Current gate
 
-**Gate 5 — Production Hardening is complete.** Security headers and CSP (D-018), the contact-endpoint rate limiter, the dependency re-review, the performance/SEO audit, the monitoring/observability review, and the founder's analytics decision (D-019 — Phase 1 ships with none) are all done; the four reviews are recorded in `TRL_GATE5_REVIEW.md`, and the manual accessibility pass remains scheduled for a human with a browser (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete. **Gate 6 — Deployment Readiness is the active gate.**
+**Gate 5 — Production Hardening is complete.** Security headers and CSP (D-018), the contact-endpoint rate limiter, the dependency re-review, the performance/SEO audit, the monitoring/observability review, and the founder's analytics decision (D-019 — Phase 1 ships with none) are all done; the four reviews are recorded in `TRL_GATE5_REVIEW.md`, and the manual accessibility pass remains scheduled for a human with a browser (`TRL_MANUAL_ACCESSIBILITY_PASS.md`). Gate 0 (Repository Reset), Gate 1 (Architecture), Gate 2 (Design System), Gate 3 (Core Website), and Gate 4 (Business Flow) are complete. **Gate 6 — Deployment Readiness is the active gate, and its repository-side work is complete:** the canonical origin is a required build variable rather than a domain the founder does not own (D-021), indexing is off by default with one explicit variable to turn it on (D-022), no account-scoped identifier is committed (D-023), `TRL_DEPLOYMENT.md` is an operational runbook with rollback/recovery/monitoring, `TRL_GATE6_FOUNDER_CHECKLIST.md` is the ordered founder action list, and both `npm run preflight` and a `wrangler deploy --dry-run` CI step validate the deployable artifact. **Gate 6 closes when the founder's steps are done** — account, first deploy, one real enquiry delivered, rate limiter enforcing.
 
 ## Status
 
@@ -20,7 +21,7 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 - CI: GitHub Actions runs typecheck, build, unit/static-accessibility tests, Playwright end-to-end and browser accessibility tests, and a dependency audit on every pull request.
 - Production hardening (Gate 5): **complete.** Security headers and CSP are implemented as a dual-write (D-018) — `public/_headers` for static responses (`script-src 'none'`) and `src/middleware.ts` for the Worker-rendered `/contact/` (the static CSP plus the `challenges.cloudflare.com` Turnstile exception). Rate limiting for `POST /contact/` is **implemented**, not just planned: the endpoint reads `env.CONTACT_RATE_LIMITER`, answers `429` with the same generic preserved-input state as `503`, and fails open by contract when the binding is absent — the `ratelimits` block in `wrangler.jsonc` stays commented out pending the founder's account-scoped `namespace_id`. The performance/SEO audit found and fixed two defects (the unpreloaded display font, and fonts with no cache policy) and pinned the measured budgets in `tests/unit/build-budget.test.ts`; the dependency re-review found no advisories and verified no copyleft code in either shipped artifact; the observability review verified that Workers Logs are enabled in the generated deploy config and documented the log contract and its gaps. Analytics: **none in Phase 1** (D-019). All four reviews are in `TRL_GATE5_REVIEW.md`. The manual accessibility pass, including the real Turnstile widget's rendering/size (D-017), is scheduled in `TRL_MANUAL_ACCESSIBILITY_PASS.md` and is a human step.
 - Payment integration: not started; offer presentation is payment-ready without a provider.
-- Deployment: not started; no hosting, email, or domain accounts, keys, or DNS changes exist.
+- Deployment: **not started, and now verified up to the boundary of needing an account.** No hosting, email, or domain account, key, or DNS record exists. The deploy path itself was checked against the real runtime during Gate 6: `npx wrangler deploy --dry-run` resolves the adapter's generated `dist/server/wrangler.json` and reports the 31-asset, 662 KiB (169 KiB gzipped) upload with its bindings; `npx wrangler dev` (the `workerd` runtime the deploy uses) confirmed the header rules, the per-route CSPs, the cache policy, a real 404 for unknown paths, the unconfigured form state, the `503` delivery boundary, and that `wrangler.json`/`.dev.vars`/`_headers` are never served. The remaining steps are the founder checklist; see `TRL_DEPLOYMENT.md` §12 for the verification log.
 - Production launch: not authorized.
 
 ## Active constraints
@@ -28,7 +29,7 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 - Do not build the entire long-term TRL ecosystem in Phase 1.
 - Do not invent pricing, claims, credentials, proof, or infrastructure ownership decisions. The approved facts live in `src/lib/site.ts` and are asserted by the content-invariant tests.
 - Implement the founder-confirmed design direction and semantic tokens from `TRL_DESIGN_SYSTEM.md`; record intentional deviations.
-- Do not deploy publicly, create hosting/email accounts, or modify DNS without explicit founder authorization.
+- Do not deploy publicly, create hosting/email accounts, or modify DNS without explicit founder authorization. A build requires `PUBLIC_SITE_URL` and there is no default (D-021); `PUBLIC_ALLOW_INDEXING` stays unset until the real domain is live (D-022).
 - Add dependencies only as recorded in the architecture, and keep the committed lockfile reviewed.
 - Do not render a control that does not do what it says. The contact form is live only where it is actually configured; an unconfigured deployment renders it disabled with a notice.
 
@@ -61,7 +62,8 @@ _Last updated: 2026-09-17 (Gate 5 — Production Hardening complete. Next: Gate 
 
 - Analytics provider or none — **resolved at Gate 5: none in Phase 1 (D-019).** Revisit at Gate 7 or when Phase 2 begins.
 - The rate-limit binding's `namespace_id` (account-scoped integer) and the Cloudflare account that provisions it — deployment gate (`TRL_RATE_LIMITING.md`).
-- Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — deployment gate (D-018 note).
+- Framing protection (`X-Frame-Options`/`frame-ancestors`) and HSTS as platform rules on the final domain — deployment gate (D-018 note). Note that a `workers.dev` host has no DNS zone, so these cannot be attached during the interim stage at all; they arrive with the domain (Step 8 of the founder checklist).
+- **Which domain, and when.** `therightlifestyle.com` is intended but not owned, and the build no longer assumes it (D-021). Until a domain exists the site is reachable only on a `workers.dev` host with indexing off, which is a verification stage rather than an address the business can point anyone to.
 - GitHub Pages is still enabled with the legacy Jekyll builder sourced from `main`; the founder should disable it or switch its source to "GitHub Actions" in Settings → Pages (the repository token gets `403`). `_config.yml` contains it until then (`TRL_DEPLOYMENT.md`).
 - Optional, if wanted before launch: a founder-approved image for `og:image`, currently absent because no imagery is approved (`TRL_GATE5_REVIEW.md`).
 - Payment provider and payment/account ownership (after first release).

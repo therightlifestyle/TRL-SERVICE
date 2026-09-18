@@ -23,6 +23,13 @@ export default defineConfig({
   // machine and guarantees no real email is ever sent from this suite.
   webServer: {
     command: `cp .dev.vars.example .dev.vars && npm run build && npx astro preview --host 127.0.0.1 --port ${PORT}`,
+    // The build requires a canonical origin and has no default (D-021). E2E runs
+    // against a local production build, so a local origin is the honest value —
+    // and Playwright merges this with process.env, so an exported
+    // PUBLIC_SITE_URL still wins where one is meant to be tested.
+    env: {
+      PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL ?? `http://127.0.0.1:${PORT}`,
+    },
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

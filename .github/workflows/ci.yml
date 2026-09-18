@@ -15,6 +15,15 @@ concurrency:
 
 env:
   NODE_VERSION: '22'
+  # The build requires a canonical origin and has no default (D-021). CI builds a
+  # throwaway artifact for testing, so it uses a reserved, non-resolvable origin:
+  # a real-looking host here would be a claim about infrastructure, and `.invalid`
+  # is the domain RFC 2606 guarantees can never exist. Tests derive the origin from
+  # the artifact rather than assuming this value.
+  PUBLIC_SITE_URL: https://ci.invalid
+  # Indexing stays in the default (off) state, which is what the first deployment
+  # ships with, so the crawl policy asserted in CI is the one that goes live first.
+  PUBLIC_ALLOW_INDEXING: 'false'
 
 jobs:
   verify:
@@ -33,6 +42,9 @@ jobs:
       - name: Install dependencies from the lockfile
         run: npm ci
 
+      - name: Deployment preflight
+        run: npm run preflight
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -41,6 +53,13 @@ jobs:
 
       - name: Unit tests and static accessibility checks
         run: npm run test:unit
+
+      # Proves the deployable artifact is valid before anyone tries to deploy it,
+      # and needs no credentials or account: it resolves the adapter's generated
+      # config (dist/server/wrangler.json), checks the bindings, and stops short
+      # of uploading.
+      - name: Validate the deploy artifact
+        run: npx wrangler deploy --dry-run
 
   e2e:
     name: End-to-end and browser accessibility tests

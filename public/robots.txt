@@ -1,8 +1,0 @@
-# TRL — The Right Lifestyle
-# The site is not deployed yet (see docs/TRL_DEPLOYMENT.md). This file ships with
-# the build so the production host serves a deliberate policy from day one.
-
-User-agent: *
-Allow: /
-
-Sitemap: https://therightlifestyle.com/sitemap-index.xml
