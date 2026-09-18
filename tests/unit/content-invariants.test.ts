@@ -84,7 +84,16 @@ describe('positioning and identity', () => {
     expect(site.name).toBe('TRL');
     expect(site.legalName).toBe('The Right Lifestyle');
     expect(site.founder).toBe('Rashid Muhammad Amir');
-    expect(site.domain).toBe('therightlifestyle.com');
+  });
+
+  it('does not assert a domain or origin the business does not own (D-021)', () => {
+    // therightlifestyle.com is *intended*, not owned. It lived here as an
+    // approved fact until Gate 6, which meant every build claimed a canonical
+    // origin the founder could not back. The origin is a build variable now, so
+    // this asserts the old shape does not come back.
+    expect(Object.keys(site)).not.toContain('domain');
+    expect(Object.keys(site)).not.toContain('defaultOrigin');
+    expect(JSON.stringify(site)).not.toMatch(/https?:\/\//);
   });
 });
 

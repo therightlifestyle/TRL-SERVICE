@@ -71,10 +71,26 @@ test('an unknown route returns the 404 page', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText(/that page does not exist/i);
 });
 
-test('robots.txt and the sitemap are served', async ({ request }) => {
+test('robots.txt and the sitemap are served', async ({ page, request }) => {
+  // Gate 6 (D-022): robots.txt is generated from the deployment's origin and its
+  // indexing flag, so this asserts the policy rather than a fixed string.
   const robots = await request.get('/robots.txt');
   expect(robots.status()).toBe(200);
-  expect(await robots.text()).toContain('Sitemap:');
+  expect(robots.headers()['content-type']).toContain('text/plain');
+
+  const body = await robots.text();
+
+  // Crawling is always allowed, including while indexing is off: a `Disallow: /`
+  // would stop crawlers from reading the page-level noindex directive that keeps
+  // an unindexed deployment out of search results.
+  expect(body).toContain('Allow: /');
+  expect(body).not.toContain('Disallow');
+
+  // The sitemap is advertised only when pages are indexable. Read the state from
+  // a page and require robots.txt to agree with it.
+  await page.goto('/');
+  const indexingOn = (await page.locator('meta[name="robots"]').count()) === 0;
+  expect(body.includes('Sitemap:')).toBe(indexingOn);
 
   const sitemap = await request.get('/sitemap-index.xml');
   expect(sitemap.status()).toBe(200);

@@ -20,6 +20,18 @@ import { join } from 'node:path';
 const DIST_INDEX = join(process.cwd(), 'dist', 'client', 'index.html');
 const LOCK_DIR = join(process.cwd(), 'node_modules', '.cache', 'trl-unit-build-lock');
 
+/*
+ * A build needs a canonical origin and there is no default (D-021), so a local
+ * `npm run test:unit` on a clean checkout supplies an obviously local one rather
+ * than failing. On CI, and in any shell where the variable is already exported,
+ * that value is used unchanged — `??=` never overwrites.
+ *
+ * Tests do NOT assert against this value: they read the origin out of the built
+ * artifact (see helpers/build-artifacts.ts), so a build made with a different
+ * origin — a staging or production one — is still tested rather than rejected.
+ */
+export const LOCAL_BUILD_ORIGIN = 'http://localhost:4321';
+
 function sleep(ms: number): void {
   const signal = new Int32Array(new SharedArrayBuffer(4));
   Atomics.wait(signal, 0, 0, ms);
@@ -27,6 +39,8 @@ function sleep(ms: number): void {
 
 export function buildOnce(timeoutMs = 180_000): void {
   if (existsSync(DIST_INDEX)) return;
+
+  process.env.PUBLIC_SITE_URL ??= LOCAL_BUILD_ORIGIN;
 
   // Ensure the parent exists so the non-recursive mkdir below can't fail on a
   // missing ancestor (recursive parent creation is safe: no lock lives there).

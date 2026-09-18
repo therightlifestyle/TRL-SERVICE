@@ -1,11 +1,30 @@
 /*
  * Wrangler configuration.
  *
- * The Astro Cloudflare adapter generates the full deploy config into
- * `dist/client/wrangler.json` at build time (see docs/TRL_DEPLOYMENT.md).
- * This file anchors local development: the @cloudflare/vite-plugin reads it to
- * resolve the project root, where `.dev.vars` supplies local runtime variables
- * (Cloudflare's published dummy Turnstile keys — see `.dev.vars.example`).
+ * The Astro Cloudflare adapter generates the full deploy configuration at build
+ * time into `dist/server/wrangler.json` — the server output, not the client one,
+ * which this comment named incorrectly until Gate 6 (asserted in
+ * tests/unit/deployment-config.test.ts, and corrected in the changelog).
+ * Running `wrangler deploy` from
+ * the repository root works without any flag: Wrangler detects the generated
+ * file, prints "Using redirected Wrangler configuration", and uploads from there
+ * via the `.wrangler/deploy/config.json` redirect it writes. Verified with
+ * `wrangler deploy --dry-run`, and re-checked in CI on every pull request.
+ *
+ * `account_id` is deliberately absent (D-023). It is optional for Wrangler, the
+ * Cloudflare account does not exist yet, and an invented value would not merely
+ * be cosmetic: Cloudflare's own troubleshooting guidance for "Incorrect
+ * account_id" is to remove it, and a wrong integer deploys against whatever
+ * account that identifier belongs to. Workers Builds supplies the account
+ * context to its builds, so nothing needs to be committed for the founder to
+ * deploy, and a local or CI deploy passes it explicitly instead
+ * (see docs/TRL_DEPLOYMENT.md).
+ *
+ * Two bindings are provisioned automatically by the adapter on first deploy and
+ * will appear in that deploy's output: a KV namespace for `SESSION` and an
+ * `IMAGES` binding. Neither is used by the current application, which has no
+ * sessions and no runtime image processing; they are the adapter's defaults and
+ * require no account-scoped identifier in this file.
  *
  * No production values live here: runtime variables are set in the hosting
  * platform, never committed (docs/TRL_SECURITY.md).

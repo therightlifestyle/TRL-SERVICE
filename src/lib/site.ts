@@ -5,6 +5,12 @@
  * and docs/TRL_DECISIONS.md (D-002, D-003). Content invariant tests in
  * tests/unit assert these values, so an accidental edit fails the build pipeline.
  * Do not add prices, claims, credentials, or contact channels that are not approved.
+ *
+ * Note what is deliberately NOT here: the production origin. `therightlifestyle.com`
+ * is an intended domain that the founder does not own (Gate 6), so asserting it as
+ * an approved fact would put a claim into the build that the business cannot back.
+ * The origin is a build-time variable (`PUBLIC_SITE_URL`) instead — see
+ * docs/TRL_DEPLOYMENT.md and D-021.
  */
 
 export const site = {
@@ -13,8 +19,6 @@ export const site = {
   founder: 'Rashid Muhammad Amir',
   positioning:
     "We don't sell AI tools. We build business systems that give owners their time back.",
-  domain: 'therightlifestyle.com',
-  defaultOrigin: 'https://therightlifestyle.com',
 } as const;
 
 export const contact = {
