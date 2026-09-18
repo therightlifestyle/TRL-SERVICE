@@ -1,6 +1,6 @@
 # TRL — Session Handoff
 
-_Last updated: 2026-09-19 (Gate 6 — Deployment Readiness, repository side complete)._
+_Last updated: 2026-09-19 (Gate 6 — Deployment Readiness, repository side complete and merged)._
 
 ## Latest session: Gate 6 — Deployment Readiness (repository side)
 
@@ -140,13 +140,20 @@ DNS change exists, and no credentials exist anywhere in the repository.
 
 ## Git
 
-- Branch: `arena/01a0b625-trl-service`, based on `main` at `aaef3bf` (the PR #9 merge).
-- Commit, push to that branch, and open the PR; CI must be green before merge.
+- **Merged.** PR #10 (`arena/01a0b625-trl-service` → `main`) is merged as `6a760fb`, on top of
+  `042dc4b` (the Gate 6 commit), which was based on `main` at `aaef3bf` (the PR #9 merge).
+- CI on `main` after the merge: all three jobs green, and the legacy `pages build and
+  deployment` run is green too — the `_config.yml` containment holds with the new files.
 
 ## NEXT SINGLE ACTION
 
-Open the PR for this Gate 6 work and confirm all three CI jobs pass. Then hand
-`docs/TRL_GATE6_FOUNDER_CHECKLIST.md` to the founder and walk Step 1 — the Cloudflare account
-and the first `workers.dev` deploy — because from that point the repository stops being able
-to make progress on its own: every remaining Gate 6 item needs an account, and every Gate 7
-item needs a deployed origin.
+Hand `docs/TRL_GATE6_FOUNDER_CHECKLIST.md` to the founder and walk **Step 1** — the Cloudflare
+account and the first `workers.dev` deploy — because from this point the repository cannot make
+progress on its own: every remaining Gate 6 item needs an account, and every Gate 7 item needs a
+deployed origin. Steps 2–7 follow (Turnstile, Resend, the real enquiry, the rate-limit
+`namespace_id`, disabling GitHub Pages), with Step 8 held for when a domain is actually owned.
+
+Nothing else in the repository blocks Gate 6. If the founder wants to work on something else
+before accounts exist, the honest options are the manual accessibility pass (Step: a human with a
+browser and a screen reader) or waiting — **not** adding features to a site that has not yet
+delivered a single real enquiry.
