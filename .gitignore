@@ -1,0 +1,13 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local runtime / dependency artifacts
+node_modules/
+*.log
+
+# Never commit local secrets
+.env
+.env.*
+!.env.example

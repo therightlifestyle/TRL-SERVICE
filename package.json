@@ -1,0 +1,14 @@
+{
+  "name": "trl-public-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static TRL website and browser-only workflow demonstration. No API dependencies.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check:js": "node --check site.js && node --check contact.js && node --check builder.js && node --check workflow-engine.mjs"
+  }
+}
